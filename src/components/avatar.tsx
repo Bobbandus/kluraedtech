@@ -681,119 +681,94 @@ const SKINS: Record<string, (u: U) => ReactNode> = {
   ),
 
   /* ---------- Early alpha-exklusiv ---------- */
-  pionjar: (u) => {
+  laserdala: (u) => {
     const aura = u("aura");
-    const ring = u("ring");
+    const glow = u("glow");
     const gold = u("gold");
-    const comp = u("comp");
-    const rib = u("rib");
-    const star = u("star");
-    const fur = Array.from({ length: 16 }, (_, i) => {
-      const a = (i / 16) * Math.PI * 2;
-      return [50 + Math.cos(a) * 24, 53 + Math.sin(a) * 19] as const;
-    });
+    const eye = u("eye");
     return (
       <>
         <defs>
           <radialGradient id={aura}>
-            <stop offset="0.4" stopColor="#5fe0c8" stopOpacity="0.6" />
-            <stop offset="0.72" stopColor="#7c6cf0" stopOpacity="0.28" />
-            <stop offset="1" stopColor="#7c6cf0" stopOpacity="0" />
+            <stop offset="0.35" stopColor="#b98cff" stopOpacity="0.55" />
+            <stop offset="0.7" stopColor="#ff4fa3" stopOpacity="0.2" />
+            <stop offset="1" stopColor="#ff4fa3" stopOpacity="0" />
           </radialGradient>
-          <linearGradient id={ring} x1="0" y1="0" x2="1" y2="1">
-            <stop offset="0" stopColor="#43d6a0" />
-            <stop offset="0.5" stopColor="#5fe0e0" />
-            <stop offset="1" stopColor="#ff9b21" />
+          <linearGradient id={glow} x1="0" y1="0" x2="1" y2="0">
+            <stop offset="0" stopColor="#ff2e63" stopOpacity="0.95" />
+            <stop offset="1" stopColor="#ff2e63" stopOpacity="0.15" />
           </linearGradient>
           <linearGradient id={gold} x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0" stopColor="#fff4c2" />
+            <stop offset="0" stopColor="#fff1b0" />
             <stop offset="0.5" stopColor="#ffc93c" />
-            <stop offset="1" stopColor="#d18a00" />
+            <stop offset="1" stopColor="#c98200" />
           </linearGradient>
-          <radialGradient id={comp}>
-            <stop offset="0" stopColor="#fffbe8" />
-            <stop offset="0.6" stopColor="#ffe08a" />
-            <stop offset="1" stopColor="#ffb238" />
-          </radialGradient>
-          <linearGradient id={rib} x1="0" y1="1" x2="0" y2="0">
-            <stop offset="0" stopColor="#43d6a0" stopOpacity="0" />
-            <stop offset="0.4" stopColor="#43d6a0" stopOpacity="0.85" />
-            <stop offset="0.8" stopColor="#5fe0e0" stopOpacity="0.7" />
-            <stop offset="1" stopColor="#b48cff" stopOpacity="0" />
-          </linearGradient>
-          <radialGradient id={star}>
-            <stop offset="0" stopColor="#fff6cf" stopOpacity="1" />
-            <stop offset="1" stopColor="#ffc93c" stopOpacity="0" />
+          <radialGradient id={eye}>
+            <stop offset="0" stopColor="#ffffff" />
+            <stop offset="0.35" stopColor="#ffd1de" />
+            <stop offset="0.7" stopColor="#ff2e63" />
+            <stop offset="1" stopColor="#ff2e63" stopOpacity="0" />
           </radialGradient>
         </defs>
-        {/* Aura, norrskensband och ring */}
-        <circle cx="50" cy="54" r="49" fill={`url(#${aura})`} />
-        <path d="M4 76C-2 50 6 22 22 6C18 28 20 44 30 56C22 60 12 66 4 76Z" fill={`url(#${rib})`} opacity={0.9} />
-        <path d="M96 76C102 50 94 22 78 6C82 28 80 44 70 56C78 60 88 66 96 76Z" fill={`url(#${rib})`} opacity={0.9} />
-        <circle className="kl-spin" cx="50" cy="55" r="42" fill="none" stroke={`url(#${ring})`} strokeWidth="2.2" strokeDasharray="2.5 5" strokeLinecap="round" opacity={0.9} />
+        <circle cx="48" cy="54" r="48" fill={`url(#${aura})`} />
         <g className="kl-twinkle">
-          <Sparkle x={10} y={22} s={4.2} color="#e6fff6" />
-          <Sparkle x={92} y={46} s={3.2} color="#ffe9b0" />
+          <Sparkle x={10} y={20} s={4} color="#efe2ff" />
+          <Sparkle x={30} y={8} s={2.4} color="#fff" />
         </g>
         <g className="kl-twinkle kl-twinkle-2">
-          <Sparkle x={86} y={12} s={2.4} color="#fff" />
-          <Sparkle x={6} y={58} s={2.6} color="#cfe8ff" />
+          <Sparkle x={8} y={70} s={2.6} color="#ffc6e0" />
+          <Sparkle x={52} y={6} s={3} color="#ffe9b0" />
         </g>
-        <Ground u={u} y={95} w={30} />
-        {/* Vimpel */}
-        <path d="M82 93V24" stroke="#4f3a1d" strokeWidth="3.2" strokeLinecap="round" />
-        <path d="M83 24C89 25 94 27 99 30C94 32 89 34 83 36Z" fill={`url(#${gold})`} stroke="#7a5200" strokeWidth="1.4" strokeLinejoin="round" />
-        <text x="87.4" y="33.2" fontSize="8" fontWeight="900" fill="#5a3a00" fontFamily="system-ui, sans-serif">
-          α
-        </text>
-        {/* Kropp med huva */}
+        <Ground u={u} y={94} w={36} />
+        <Body u={u} k="base" t={{ fill: "#3b2370", shade: "#24124d", light: "#6a4bb0", line: "#140833" }} d="M10 84Q10 82 12 82H84Q86 82 86 84V89Q86 91 84 91H12Q10 91 10 89Z" sx={-1} sy={-2}>
+          <path d="M12 84.5H84" stroke={`url(#${gold})`} strokeWidth="1.6" />
+        </Body>
         <Body
           u={u}
           k="b"
-          t={T.pion}
-          d="M50 9C55 16 61 23 67 28C79 34 86 46 86 61C86 81 71 93 50 93S14 81 14 61C14 46 21 34 33 28C39 23 45 16 50 9Z"
-          sy={-6}
+          t={{ fill: "#8f55e0", shade: "#5a2aa8", light: "#caa6ff", line: "#22094d" }}
+          d="M18 44Q18 40 22 40H52L58 20Q60 12 68 12H74Q80 12 83 18L88 28Q90 33 85 35L78 37L75 46Q73 52 68 54L70 82H60L56 64H32L28 82H18L20 62Q12 58 10 50L6 40Q12 42 18 44Z"
+          sy={-5}
         >
-          {[
-            [28, 82, 1.2],
-            [74, 80, 1.5],
-            [22, 58, 1],
-            [79, 56, 1.1],
-            [62, 24, 0.9],
-          ].map(([x, y, r], i) => (
-            <circle key={i} cx={x} cy={y} r={r} fill="#fff" opacity={0.85} />
-          ))}
-          <path d="M50 9C47 30 46 60 50 93" stroke="#142445" strokeWidth="2" fill="none" opacity={0.6} />
+          <path d="M64 14Q58 24 56 40" stroke="#22094d" strokeWidth="5" fill="none" strokeLinecap="round" />
+          <path d="M64 14Q58 24 56 40" stroke="#ff4fa3" strokeWidth="1.6" fill="none" strokeLinecap="round" opacity={0.8} />
+          <path d="M52 40Q50 52 44 58M28 44Q32 54 42 58" stroke={`url(#${gold})`} strokeWidth="4" fill="none" strokeLinecap="round" />
+          <path d="M52 40Q50 52 44 58M28 44Q32 54 42 58" stroke="#5a2aa8" strokeWidth="1.2" fill="none" strokeLinecap="round" strokeDasharray="1.5 3" />
+          <g transform="translate(38 50)">
+            {[0, 72, 144, 216, 288].map((a) => (
+              <ellipse key={a} cx="0" cy="-4.8" rx="2.7" ry="4.6" fill="#fff4fb" transform={`rotate(${a})`} />
+            ))}
+            <circle r="2.6" fill="#ffc93c" />
+          </g>
+          <g fill="#5fe0c8">
+            <path d="M22 50c2-4 6-5 9-3-3 1-5 3-6 6z" />
+            <path d="M48 58c3-1 6 0 7 3-3-1-5 0-7 2z" />
+          </g>
+          <path d="M24 52q4-4 8 0M64 22q4 0 6 4" stroke="#fff" strokeWidth="2" fill="none" strokeLinecap="round" opacity={0.85} />
+          <path d="M72 28q6 1 10 4" stroke={`url(#${gold})`} strokeWidth="2.6" fill="none" strokeLinecap="round" />
+          <path d="M78 37q-4 6-10 8" stroke="#ff4fa3" strokeWidth="2.6" fill="none" strokeLinecap="round" />
         </Body>
-        {/* Stjärna på huvan */}
-        <circle className="kl-pulse" cx="50" cy="8" r="9" fill={`url(#${star})`} />
-        <Sparkle x={50} y={8} s={6} color="#ffd34d" />
-        <Sparkle x={50} y={8} s={2.6} color="#fffbe8" />
-        {/* Pälskant runt ansiktet */}
-        {fur.map(([x, y], i) => (
-          <circle key={i} cx={x} cy={y} r="6.2" fill="#e9dcc6" stroke="#0a1428" strokeWidth="1.8" />
-        ))}
-        {fur.map(([x, y], i) => (
-          <circle key={`f${i}`} cx={x - 0.6} cy={y - 0.8} r="5" fill="#fbf4e6" />
-        ))}
-        {/* Ansikte */}
-        <ellipse cx="50" cy="53" rx="20" ry="15.5" fill="#f6e5d2" stroke="#0a1428" strokeWidth="1.8" />
-        <path d="M34 50c2-6 7-9 13-10-5 2-8 6-10 11z" fill="#fff" opacity={0.75} />
-        <Eye x={42} y={52} r={6.2} line="#0a1428" pupil="#142445" />
-        <Eye x={58} y={52} r={6.2} line="#0a1428" pupil="#142445" />
-        <circle cx="43.4" cy="50.3" r="1.25" fill="#ffd055" />
-        <circle cx="59.4" cy="50.3" r="1.25" fill="#ffd055" />
-        <Cheeks y={60} gap={14} r={3.2} color="#ff8f8a" />
-        <path d="M46 61q4 3.2 8 0" stroke="#0a1428" strokeWidth="2.3" fill="none" strokeLinecap="round" />
-        {/* Halsduk som fladdrar */}
-        <path d="M26 74C38 80 62 80 74 74L73 81C61 86 39 86 27 81Z" fill="#ff9b21" stroke="#6e3500" strokeWidth="1.8" strokeLinejoin="round" />
-        <path d="M70 78C78 79 84 76 90 70C88 78 82 84 74 85C72 83 71 81 70 78Z" fill="#ff8a10" stroke="#6e3500" strokeWidth="1.8" strokeLinejoin="round" />
-        <path d="M30 77c12 4 28 4 40 0" stroke="#ffd08a" strokeWidth="1.5" fill="none" />
-        <path d="M76 81l6-4M79 83l5-4" stroke="#ffd08a" strokeWidth="1.2" strokeLinecap="round" />
-        {/* Kompass i bröstet */}
-        <circle cx="50" cy="88" r="5.6" fill={`url(#${comp})`} stroke="#7a5200" strokeWidth="1.5" />
-        <path d="M50 84L51.4 88L50 92L48.6 88Z" fill="#d6463a" />
-        <path d="M50 88L51.4 88L50 92Z" fill="#1b2422" opacity={0.55} />
+        {/* Öra */}
+        <path d="M66 13L68 4L74 12Z" fill="#8f55e0" stroke="#22094d" strokeWidth="2" strokeLinejoin="round" />
+        <path d="M68.4 7.5L69.4 11.2" stroke="#ffc93c" strokeWidth="1.4" strokeLinecap="round" />
+        {/* Laserstrålar */}
+        <g className="kl-twinkle" style={{ animationDuration: "0.8s" }}>
+          <path d="M73 21L112 30M78 19L112 22" stroke={`url(#${glow})`} strokeWidth="11" strokeLinecap="round" opacity={0.4} />
+        </g>
+        <path d="M73 21L112 30M78 19L112 22" stroke="#ff2e63" strokeWidth="4.6" strokeLinecap="round" />
+        <path d="M73 21L112 30M78 19L112 22" stroke="#ffb3c8" strokeWidth="2.4" strokeLinecap="round" />
+        <path d="M73 21L112 30M78 19L112 22" stroke="#fff" strokeWidth="0.9" strokeLinecap="round" />
+        {/* Glödande ögon */}
+        <circle cx="78" cy="19" r="4.6" fill={`url(#${eye})`} />
+        <circle cx="72.5" cy="21.5" r="7.5" fill={`url(#${eye})`} />
+        <circle cx="72.5" cy="21.5" r="3.4" fill="#fff" stroke="#22094d" strokeWidth="1.4" />
+        <circle cx="72.5" cy="21.5" r="1.6" fill="#ff2e63" />
+        <path d="M66 16.5L77 17.5" stroke="#22094d" strokeWidth="2.2" strokeLinecap="round" />
+        <circle cx="84" cy="28" r="1.2" fill="#22094d" />
+        <g className="kl-twinkle" style={{ animationDuration: "0.6s" }}>
+          <Sparkle x={108} y={26} s={6} color="#ffd1de" />
+        </g>
+        <Sparkle x={108} y={26} s={2.6} color="#fff" />
       </>
     );
   },

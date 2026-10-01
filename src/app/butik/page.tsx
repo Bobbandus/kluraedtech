@@ -64,7 +64,7 @@ export default function Shop() {
             </span>
             <span className={s.alphaText}>
               <span className={s.alphaBadge}>Early alpha · exklusiv</span>
-              <span className={s.alphaName}>Pionjären</span>
+              <span className={s.alphaName}>Laserdala</span>
               <span className={s.alphaSub}>Bara för dig som spelar nu. Kan inte köpas och kommer aldrig tillbaka.</span>
             </span>
             <span className={s.alphaState}>{st.skinId === ALPHA_SKIN ? "Används" : "Din"}</span>

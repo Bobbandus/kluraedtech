@@ -4,11 +4,12 @@ import { useEffect, useState } from "react";
 import { Avatar } from "./avatar";
 import { GnistaIcon } from "./brand";
 import { useHydrated, useStore } from "@/lib/store";
+import { ALPHA_SKIN } from "@/data/skins";
 import s from "./alpha-gift.module.css";
 
 /**
  * Visas en gång för alla som spelar under early alpha:
- * de får den exklusiva figuren Pionjären.
+ * de får den exklusiva figuren Laserdala.
  */
 export function AlphaGift() {
   const hydrated = useHydrated();
@@ -55,7 +56,7 @@ export function AlphaGift() {
               );
             })}
           </div>
-          <Avatar skin="pionjar" size={190} className={`${s.hero} avatar-hero`} title="Pionjären" />
+          <Avatar skin={ALPHA_SKIN} size={190} className={`${s.hero} avatar-hero`} title="Laserdala" />
         </div>
         <div className={s.body}>
           <span className={s.badge}>Early alpha · exklusiv</span>
@@ -63,11 +64,11 @@ export function AlphaGift() {
             Tack för att du är med från början
           </h2>
           <p className={s.text}>
-            Du får <strong>Pionjären</strong> – en figur som bara de första spelarna någonsin kommer att ha. Den går inte att köpa och kommer aldrig tillbaka.
+            Du får <strong>Laserdala</strong> – en lila dalahäst med laserögon, en figur som bara de första spelarna någonsin kommer att ha. Den går inte att köpa och kommer aldrig tillbaka.
           </p>
           <div className={s.actions}>
             <button className="btn btn-accent btn-lg btn-block" onClick={() => close(true)} autoFocus>
-              Använd Pionjären
+              Använd Laserdala
             </button>
             <button className={s.later} onClick={() => close(false)}>
               Kanske senare

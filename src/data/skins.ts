@@ -26,10 +26,12 @@ export interface Skin {
 }
 
 /** Delas ut till alla som spelar under early alpha. Kommer aldrig tillbaka. */
-export const ALPHA_SKIN = "pionjar";
+export const ALPHA_SKIN = "laserdala";
+/** Tidigare early alpha-figur som ersatts – migreras till ALPHA_SKIN. */
+export const RETIRED_SKINS = ["pionjar"];
 
 export const SKINS: Skin[] = [
-  { id: "pionjar", name: "Pionjären", rarity: "alfa", unlock: { kind: "alfa" }, blurb: "Var här från första dagen. Bär norrskenet i ryggen och kompassen i hjärtat." },
+  { id: "laserdala", name: "Laserdala", rarity: "alfa", unlock: { kind: "alfa" }, blurb: "Snidad i Mora, laddad i rymden. Var här från första dagen – och ser rakt igenom fel svar." },
   { id: "kisel", name: "Kisel", rarity: "vanlig", unlock: { kind: "start" }, blurb: "Säger inte mycket. Svarar rätt ändå." },
   { id: "mosse", name: "Mosse", rarity: "vanlig", unlock: { kind: "start" }, blurb: "Växer lite för varje rätt svar." },
   { id: "kotte", name: "Kotte", rarity: "vanlig", unlock: { kind: "start" }, blurb: "Föll från en tall. Landade på fötterna." },

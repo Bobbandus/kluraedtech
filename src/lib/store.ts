@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
 import { MY_QUIZZES, type Quiz } from "@/data/quizzes";
-import { ALPHA_SKIN, STARTER_SKINS } from "@/data/skins";
+import { ALPHA_SKIN, RETIRED_SKINS, STARTER_SKINS } from "@/data/skins";
 import type { SessionResult } from "@/lib/results";
 
 /**
@@ -223,7 +223,11 @@ export const useStore = create<Store>()(
       merge: (persisted, current) => {
         const p = (persisted ?? {}) as Partial<Store>;
         const student = { ...current.student, ...(p.student ?? {}) };
+        // Den som hade den gamla alpha-figuren får se presenten för den nya
+        if (student.owned.some((id) => RETIRED_SKINS.includes(id))) student.alphaGiftSeen = false;
+        student.owned = student.owned.filter((id) => !RETIRED_SKINS.includes(id));
         if (!student.owned.includes(ALPHA_SKIN)) student.owned = [...student.owned, ALPHA_SKIN];
+        if (RETIRED_SKINS.includes(student.skinId)) student.skinId = ALPHA_SKIN;
         if (student.alphaGiftSeen === undefined) student.alphaGiftSeen = false;
         return { ...current, ...p, student, teacher: { ...current.teacher, ...(p.teacher ?? {}) }, prefs: { ...current.prefs, ...(p.prefs ?? {}) } };
       },

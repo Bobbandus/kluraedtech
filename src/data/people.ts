@@ -41,7 +41,6 @@ export function makeClassmates(seed: number, count: number, exclude: string[] = 
   const rng = mulberry32(seed);
   const names = shuffle(rng, FIRST_NAMES.filter((n) => !exclude.includes(n))).slice(0, count);
   const skins = SKINS.filter((s) => s.unlock.kind !== "plus").map((s) => s.id);
-  // Några klasskamrater har också Pionjären – alla som är med nu får den
 
   return names.map((name, i) => {
     const r = rng();
