@@ -4,6 +4,7 @@ Ett svenskt multiplayer-quiz för klassrummet där kunskap är den viktigaste sk
 
 **Spellägen**
 
+- **Biljakt** – kör undan polisen i egen takt. Varje elev styr en egen bil genom en stad sedd uppifrån. När mätaren är full kommer en fråga i slowmotion. Rätt svar ger en stjärna och fler poliser, fel svar ger ingen. Blir man fast tappar man en stjärna. Flest stjärnor vinner. Projektorn visar hela staden och topplistan.
 - **Fjällförsvar** – tower defense i egen takt. Varje elev försvarar sin stuga mot troll. Rätt svar ger virke, virket blir torn. Trollen går hela tiden, så man måste både kunna svaren och spela. Fel svar spärrar en kort stund och visar förklaringen.
 - **Topptur** – hela klassen svarar på samma fråga på tavlan och klättrar mot toppen. En Joker per match tar bort två fel svar.
 
@@ -21,7 +22,7 @@ Kräver Node 20+. Produktion (Vercel) bygger från `main`.
 
 ### Demoläge (standard, så körs Vercel)
 
-Allt körs i webbläsaren. Klasskamrater simuleras och allt sparas i `localStorage`. Vilken sexsiffrig kod som helst fungerar för elever. Koder som slutar på en jämn siffra blir Fjällförsvar, udda blir Topptur.
+Allt körs i webbläsaren. Klasskamrater simuleras och allt sparas i `localStorage`. Vilken sexsiffrig kod som helst fungerar för elever. Sista siffran avgör spelläget: 0, 3, 6 och 9 blir Biljakt, 2, 4 och 8 blir Fjällförsvar och 1, 5 och 7 blir Topptur.
 
 ### Testa riktig multiplayer lokalt
 
@@ -43,6 +44,7 @@ Backend-delen är en enkel enprocess-server avsedd för slutna tester. Den rikti
 | --- | --- |
 | `npm run typecheck` | TypeScript |
 | `npm run test:filter` | testar namnfiltret (svenska + engelska, leetspeak, varianter) |
+| `npm run balans:jakt` | simulerar Biljakt: hur många stjärnor olika elevtyper får |
 | `npm run test:import` | testar inklistring av frågor (block- och kalkylarksformat) |
 | `npm run balans` | simulerar 3 000 Topptur-matcher |
 | `npm run balans:fjall` | simulerar Fjällförsvar för olika elevtyper |
@@ -52,7 +54,7 @@ Backend-delen är en enkel enprocess-server avsedd för slutna tester. Den rikti
 ```
 src/app/                 routes (/, /spela, /butik, /profil, /larare/…, /api/…)
 src/components/game/     elevvy, projektorvy, defense/ (canvas-TD), climb/ (klättervy)
-src/lib/game/            spelmotorer: engine.ts (Topptur), defense.ts (Fjällförsvar)
+src/lib/game/            spelmotorer: engine.ts (Topptur), defense.ts (Fjällförsvar), chase.ts (Biljakt)
 src/lib/rooms/           rum/livesession – samma logik i webbläsaren och på servern
 src/lib/backend/         DEMO_MODE, transportgränssnitt (lokal/remote), datalager
 src/lib/moderation/      namnfilter

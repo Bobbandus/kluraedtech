@@ -92,6 +92,9 @@ export default function Dashboard() {
                   </div>
                 </Link>
                 <div className={s.startPair}>
+                  <Link href={`/larare/starta/${q.id}?lage=jakt`} className="btn btn-sm" aria-label={`Starta ${q.title} som Biljakt`} title="Biljakt – kör undan polisen i egen takt">
+                    <Icon name="car" size={16} /> <span className={s.startLabel}>Biljakt</span>
+                  </Link>
                   <Link href={`/larare/starta/${q.id}?lage=fjall`} className="btn btn-primary btn-sm" aria-label={`Starta ${q.title} som Fjällförsvar`} title="Fjällförsvar – tower defense i egen takt">
                     <Icon name="hammer" size={16} /> <span className={s.startLabel}>Fjällförsvar</span>
                   </Link>

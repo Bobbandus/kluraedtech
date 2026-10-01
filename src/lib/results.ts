@@ -33,6 +33,8 @@ export interface SessionResult {
   className: string;
   date: string;
   energy: Energy;
+  /** Spelläge (saknas i äldre resultat = Topptur) */
+  mode?: "topptur" | "fjall" | "jakt";
   players: ResultPlayer[];
   questions: ResultQuestion[];
 }

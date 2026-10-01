@@ -14,6 +14,7 @@ import { useQuiz } from "@/lib/quizzes";
 import { getTransport, saveHostKey } from "@/lib/backend";
 import type { GameMode } from "@/lib/rooms/types";
 import { MountainScene } from "@/components/scene";
+import ChasePreview from "@/components/game/chase/ChasePreview";
 import DefensePreview from "@/components/game/defense/DefensePreview";
 
 export default function HostSetup() {
@@ -28,7 +29,7 @@ export default function HostSetup() {
   useEffect(() => {
     const sp = new URLSearchParams(window.location.search);
     const l = sp.get("lage");
-    if (l === "fjall" || l === "topptur") setMode(l);
+    if (l === "fjall" || l === "topptur" || l === "jakt") setMode(l);
     const k = sp.get("klass");
     if (k && CLASSES.some((c) => c.id === k)) setCls(k);
   }, []);
@@ -86,6 +87,7 @@ export default function HostSetup() {
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: 12, marginTop: 14 }} role="radiogroup" aria-label="Spelläge">
           {(
             [
+              { id: "jakt", name: "Biljakt", tag: "Kör undan polisen i egen takt", text: "Varje elev kör en egen bil genom stan med polisen efter sig. När mätaren är full kommer en fråga – rätt svar ger en stjärna. Flest stjärnor vinner.", time: "5–12 min" },
               { id: "fjall", name: "Fjällförsvar", tag: "Tower defense i egen takt", text: "Varje elev försvarar sin stuga mot troll. Rätt svar ger virke att bygga torn för. Trollen väntar inte – man måste både kunna och spela.", time: "5–12 min" },
               { id: "topptur", name: "Topptur", tag: "Gemensamma frågor på tavlan", text: "Alla svarar på samma fråga samtidigt och klättrar mot toppen. Du styr tempot och kan pausa för att prata om svaren.", time: `ca ${estimateMinutes(quiz)} min` },
             ] as { id: GameMode; name: string; tag: string; text: string; time: string }[]
@@ -100,7 +102,7 @@ export default function HostSetup() {
                 className="card"
                 style={{ padding: 12, textAlign: "left", borderColor: on ? "var(--ink)" : undefined, boxShadow: on ? "0 4px 0 var(--ink)" : "0 4px 0 var(--line)", transform: on ? "translateY(-2px)" : undefined, transition: "all .15s var(--ease-out)" }}
               >
-                {m.id === "fjall" ? <DefensePreview /> : <div style={{ borderRadius: 16, overflow: "hidden", aspectRatio: "3 / 2", background: "#dcefe7" }}><MountainScene climbers={[{ id: "a", skin: "mosse", t: 0.3 }, { id: "b", skin: "raven", t: 0.55, highlight: true }, { id: "c", skin: "kassetten", t: 0.75 }]} /></div>}
+                {m.id === "jakt" ? <ChasePreview /> : m.id === "fjall" ? <DefensePreview /> : <div style={{ borderRadius: 16, overflow: "hidden", aspectRatio: "3 / 2", background: "#dcefe7" }}><MountainScene climbers={[{ id: "a", skin: "mosse", t: 0.3 }, { id: "b", skin: "raven", t: 0.55, highlight: true }, { id: "c", skin: "kassetten", t: 0.75 }]} /></div>}
                 <div style={{ padding: "12px 6px 4px" }}>
                   <div className="row between">
                     <span style={{ fontFamily: "var(--font-display)", fontWeight: 900, fontSize: "1.3rem" }}>{m.name}</span>
@@ -113,7 +115,7 @@ export default function HostSetup() {
             );
           })}
         </div>
-        {mode === "fjall" && (
+        {mode !== "topptur" && (
           <div className="row gap-8 wrap" style={{ marginTop: 14 }} role="radiogroup" aria-label="Matchlängd">
             <span className="label" style={{ marginRight: 4 }}>Matchlängd</span>
             {[5, 8, 12].map((m) => (

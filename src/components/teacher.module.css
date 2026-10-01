@@ -230,3 +230,22 @@
     display: none;
   }
 }
+@media (max-width: 560px) {
+  .quickRow {
+    flex-wrap: wrap;
+    gap: 10px 14px;
+  }
+  .quickRow .thumb {
+    width: 64px;
+  }
+  .quickRow > :global(.grow) {
+    flex: 1 1 calc(100% - 80px);
+    min-width: 0;
+  }
+  .startPair {
+    flex: 1 1 100%;
+  }
+  .startPair > :global(.btn) {
+    flex: 1;
+  }
+}

@@ -130,6 +130,12 @@ const P: Record<string, ReactNode> = {
   waves: <path d="M3 9c2-2 4-2 6 0s4 2 6 0 4-2 6 0M3 15c2-2 4-2 6 0s4 2 6 0 4-2 6 0" />,
   hammer: <path d="M14 6l4 4M12.5 7.5l-8 8a1.8 1.8 0 0 0 2.5 2.5l8-8M11 5l2-2 6 6-2 2" />,
   maximize: <path d="M4.5 9V4.5H9M15 4.5h4.5V9M19.5 15v4.5H15M9 19.5H4.5V15" />,
+  car: (
+    <>
+      <path d="M4.5 15.5v-3l2-4.5a1.5 1.5 0 0 1 1.4-1h8.2a1.5 1.5 0 0 1 1.4 1l2 4.5v3a1 1 0 0 1-1 1h-13a1 1 0 0 1-1-1zM4.5 12.5h15" />
+      <path d="M7.5 16.5v2M16.5 16.5v2" />
+    </>
+  ),
 };
 
 export type IconName = keyof typeof P;

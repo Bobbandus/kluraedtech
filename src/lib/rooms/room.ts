@@ -36,6 +36,7 @@ import {
   step as stepDefense,
   type DefenseState,
 } from "@/lib/game/defense";
+import { CELL, createCity, seedFromCode, type City } from "@/lib/game/chase";
 import { checkName } from "@/lib/moderation";
 import { makeClassmates, randomNickname } from "@/data/people";
 import type { SessionResult } from "@/lib/results";
@@ -55,6 +56,7 @@ import type {
   RoomQuiz,
   RoomSettings,
 } from "./types";
+import { selfPaced } from "./types";
 
 export const AUTO = { lobby: 7000, reveal: 4800, revealWrong: 6500, leg: 9000 };
 export const summitHeight = (n: number) => n * 115;
@@ -75,6 +77,8 @@ interface RoomPlayer extends PlayerState {
   plan?: { option: number | null; time: number; joker: boolean } | null;
   defense?: DefenseState;
   nextAnswerAt?: number;
+  /** Biljakt-bot: kör mellan korsningar */
+  walk?: { i: number; j: number; pi: number; pj: number; k: number };
 }
 
 function token(rng: Rng): string {
@@ -116,6 +120,7 @@ export class Room {
   private lastBotJoin = 0;
   private lastSim = 0;
   private spots = bestSpots();
+  private chaseCity: City | null = null;
   private listeners = new Set<() => void>();
 
   constructor(code: string, quiz: RoomQuiz, settings: RoomSettings, now: number, opts: RoomOptions = {}) {
@@ -185,12 +190,23 @@ export class Room {
     return p.report.score + p.correct * 25 + hp * 5;
   }
 
+  /** Biljakt: stjärnor (aldrig fler än antal rätta svar). Rätt svar avgör vid lika. */
+  private starsOf(p: RoomPlayer) {
+    return Math.min(p.report.stars ?? 0, p.correct);
+  }
+
   private scoreOf(p: RoomPlayer) {
-    return this.settings.mode === "fjall" ? this.fjallScore(p) : p.score;
+    const m = this.settings.mode;
+    return m === "fjall" ? this.fjallScore(p) : m === "jakt" ? this.starsOf(p) : p.score;
+  }
+
+  private get selfPaced() {
+    return selfPaced(this.settings.mode);
   }
 
   private board(): BoardRow[] {
-    return ranked(this.players.map((p) => ({ id: p.id, name: p.name, skinId: p.skinId, score: this.scoreOf(p), correct: p.correct, wave: p.report.wave })));
+    const jakt = this.settings.mode === "jakt";
+    return ranked(this.players.map((p) => ({ id: p.id, name: p.name, skinId: p.skinId, score: this.scoreOf(p), correct: p.correct, wave: p.report.wave, stars: jakt ? this.starsOf(p) : undefined })));
   }
 
   /* ---------- Anslutning ---------- */
@@ -258,11 +274,11 @@ export class Room {
 
   private start(now: number) {
     this.phaseAt = now;
-    if (this.settings.mode === "fjall") {
+    if (this.selfPaced) {
       this.phase = "playing";
       this.endsAt = now + this.settings.minutes * 60_000;
       this.lastSim = now;
-      for (const p of this.players) if (p.isBot) this.initBotDefense(p, now);
+      for (const p of this.players) if (p.isBot) this.settings.mode === "jakt" ? this.initBotChase(p, now) : this.initBotDefense(p, now);
     } else {
       this.startQuestion(0, now);
     }
@@ -429,6 +445,24 @@ export class Room {
       }
       case "fjall_report": {
         const s = action.state;
+        if (!s || typeof s !== "object") return { ok: false, error: "Ogiltig rapport." };
+        if (this.settings.mode === "jakt") {
+          const clamp01 = (v: unknown) => (typeof v === "number" && Number.isFinite(v) ? Math.max(0, Math.min(1, v)) : 0.5);
+          p.report = {
+            wave: 0,
+            hp: 0,
+            score: 0,
+            downed: false,
+            stars: Math.max(0, Math.min(p.correct, Math.floor(Number(s.stars) || 0))),
+            busts: Math.max(0, Math.min(999, Math.floor(Number(s.busts) || 0))),
+            x: clamp01(s.x),
+            y: clamp01(s.y),
+            a: typeof s.a === "number" && Number.isFinite(s.a) ? s.a : 0,
+            busted: !!s.busted,
+          };
+          this.bump();
+          return { ok: true };
+        }
         p.report = {
           wave: Math.max(0, Math.min(999, Math.floor(s.wave))),
           hp: Math.max(0, Math.min(20, Math.floor(s.hp))),
@@ -470,6 +504,60 @@ export class Room {
     p.fjallAnswers.push({ q: qi, option, correct });
   }
 
+  /* ---------- Biljakt-bottar ---------- */
+
+  private city(): City {
+    if (!this.chaseCity) this.chaseCity = createCity(seedFromCode(this.code));
+    return this.chaseCity;
+  }
+
+  private initBotChase(p: RoomPlayer, now: number) {
+    const c = this.city();
+    const i = Math.floor(this.rng() * c.roadsX.length);
+    const j = Math.floor(this.rng() * c.roadsY.length);
+    p.walk = { i, j, pi: i, pj: j, k: 1 };
+    p.report = { wave: 0, hp: 0, score: 0, downed: false, stars: 0, busts: 0, x: 0.5, y: 0.5, a: 0, busted: false };
+    p.nextAnswerAt = now + (12 + this.rng() * 10) * 1000;
+  }
+
+  private stepBotChase(p: RoomPlayer, dt: number) {
+    const c = this.city();
+    const w = p.walk!;
+    // Gå vidare längs vägnätet: från (pi,pj) mot (i,j)
+    w.k += (dt * 280) / (CELL * 6);
+    if (w.k >= 1) {
+      const opts: [number, number][] = [];
+      if (w.i > 0 && !c.removed.has(`h:${w.i - 1}:${w.j}`)) opts.push([w.i - 1, w.j]);
+      if (w.i < c.roadsX.length - 1 && !c.removed.has(`h:${w.i}:${w.j}`)) opts.push([w.i + 1, w.j]);
+      if (w.j > 0 && !c.removed.has(`v:${w.i}:${w.j - 1}`)) opts.push([w.i, w.j - 1]);
+      if (w.j < c.roadsY.length - 1 && !c.removed.has(`v:${w.i}:${w.j}`)) opts.push([w.i, w.j + 1]);
+      const fwd = opts.filter(([a, b]) => a !== w.pi || b !== w.pj);
+      const [ni, nj] = (fwd.length ? fwd : opts)[Math.floor(this.rng() * (fwd.length || opts.length))] ?? [w.i, w.j];
+      w.pi = w.i;
+      w.pj = w.j;
+      w.i = ni;
+      w.j = nj;
+      w.k = 0;
+    }
+    const ax = (c.roadsX[w.pi] + 1) * CELL;
+    const ay = (c.roadsY[w.pj] + 1) * CELL;
+    const bx = (c.roadsX[w.i] + 1) * CELL;
+    const by = (c.roadsY[w.j] + 1) * CELL;
+    const r = p.report;
+    r.x = (ax + (bx - ax) * w.k) / c.w;
+    r.y = (ay + (by - ay) * w.k) / c.h;
+    if (bx !== ax || by !== ay) r.a = Math.atan2(by - ay, bx - ax);
+    // Ibland åker boten fast (oftare med fler stjärnor)
+    const stars = r.stars ?? 0;
+    if (r.busted) {
+      if (this.rng() < dt / 2.6) r.busted = false;
+    } else if (this.rng() < dt * (0.004 + stars * 0.0035)) {
+      r.busted = true;
+      r.busts = (r.busts ?? 0) + 1;
+      r.stars = Math.max(0, stars - 1);
+    }
+  }
+
   private initBotDefense(p: RoomPlayer, now: number) {
     p.defense = createDefense(Math.floor(this.rng() * 1e6));
     p.nextAnswerAt = now + this.botReadTime(p) * 1000;
@@ -486,6 +574,21 @@ export class Room {
     while (this.lastSim + DT * 1000 <= until) {
       this.lastSim += DT * 1000;
       for (const p of this.players) {
+        if (p.isBot && p.walk) {
+          this.stepBotChase(p, DT);
+          if (p.nextAnswerAt !== undefined && this.lastSim >= p.nextAnswerAt && !p.report.busted) {
+            const qi = this.drawCard(p);
+            const q = this.quiz.questions[qi];
+            const a = botAnswer(this.rng, p.profile!, { options: q.options.length, correct: q.correct, time: 30 }, { timeLimit: 999 });
+            const option = a.option ?? 0;
+            const correct = option === q.correct;
+            this.fjallRecord(p, qi, option, correct);
+            if (correct) p.report.stars = (p.report.stars ?? 0) + 1;
+            // Mätaren fylls igen: snabbare för den som kör bra
+            p.nextAnswerAt = this.lastSim + (this.botReadTime(p) + (correct ? 12 + this.rng() * 8 : 6 + this.rng() * 4)) * 1000;
+          }
+          continue;
+        }
         if (!p.isBot || !p.defense) continue;
         stepDefense(p.defense, DT);
         if (p.nextAnswerAt !== undefined && this.lastSim >= p.nextAnswerAt) {
@@ -575,7 +678,8 @@ export class Room {
   }
 
   hostView(now: number): HostView {
-    const fj = this.settings.mode === "fjall";
+    const fj = this.selfPaced;
+    const jakt = this.settings.mode === "jakt";
     return {
       code: this.code,
       mode: this.settings.mode,
@@ -595,6 +699,7 @@ export class Room {
         wave: p.report.wave,
         hp: p.report.hp,
         downed: p.report.downed,
+        ...(jakt ? { stars: this.starsOf(p), x: p.report.x, y: p.report.y, a: p.report.a, busted: p.report.busted, busts: p.report.busts } : {}),
       })),
       qIndex: this.qIndex,
       total: this.n,
@@ -662,7 +767,8 @@ export class Room {
 
   private finalFor(p: RoomPlayer): FinalStats {
     const order = this.board();
-    const fj = this.settings.mode === "fjall";
+    const fj = this.selfPaced;
+    const jakt = this.settings.mode === "jakt";
     const missed = fj
       ? Array.from(new Map(p.fjallAnswers.filter((a) => !a.correct).map((a) => [a.q, a])).values())
       : this.quiz.questions.map((_, i) => ({ q: i, rec: p.answers.find((a) => a.q === i) })).filter((x) => !x.rec?.correct).map((x) => ({ q: x.q, option: x.rec?.option ?? null }));
@@ -673,7 +779,9 @@ export class Room {
       answered: fj ? p.answered : this.n,
       bestStreak: p.bestStreak,
       score: this.scoreOf(p),
-      wave: fj ? p.report.wave : undefined,
+      wave: this.settings.mode === "fjall" ? p.report.wave : undefined,
+      stars: jakt ? this.starsOf(p) : undefined,
+      busts: jakt ? (p.report.busts ?? 0) : undefined,
       missed: missed.slice(0, 8).map((m) => {
         const q = this.quiz.questions[m.q];
         return { text: q.text, answer: q.options[q.correct], yours: m.option !== null && m.option !== undefined ? q.options[m.option] : null, explanation: q.explanation };
@@ -682,7 +790,7 @@ export class Room {
   }
 
   result(now: number): SessionResult {
-    const fj = this.settings.mode === "fjall";
+    const fj = this.selfPaced;
     const order = this.board();
     return {
       id: `r-${this.code}`,
@@ -692,6 +800,7 @@ export class Room {
       className: this.settings.className ?? "Klassen",
       date: new Date(this.createdAt || now).toISOString(),
       energy: this.settings.energy,
+      mode: this.settings.mode,
       players: order.map((row, i) => {
         const p = this.players.find((x) => x.id === row.id)!;
         return {

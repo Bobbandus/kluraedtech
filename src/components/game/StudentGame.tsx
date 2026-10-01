@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { LEG_NAMES } from "@/lib/game/engine";
 import { getTransport, loadPlayerToken, savePlayerToken } from "@/lib/backend";
-import type { ActResult, FinalStats, Peek, PlayerAction, PlayerView } from "@/lib/rooms/types";
+import type { ActResult, FinalStats, GameMode, Peek, PlayerAction, PlayerView } from "@/lib/rooms/types";
 import { summitHeight } from "@/lib/rooms/room";
 import { nicknameProblem, randomNickname } from "@/data/people";
 import { skinById } from "@/data/skins";
@@ -17,6 +17,8 @@ import { LogoMark } from "@/components/brand";
 import { CountUp, OPT_COLORS, OPT_KEYS } from "./parts";
 import ClimbScene from "./climb/ClimbScene";
 import { QuestionImage } from "@/components/QuestionImage";
+import ChaseGame from "./chase/ChaseGame";
+import { MODE_INFO } from "@/lib/modes";
 import DefenseGame from "./defense/DefenseGame";
 import s from "./game.module.css";
 
@@ -110,7 +112,7 @@ export default function StudentGame({ code }: { code: string }) {
         <form className={`${s.panel} stack gap-16`} onSubmit={join}>
           <div>
             <span className={s.codePill}>
-              <Icon name={peek.mode === "fjall" ? "hammer" : "mountain"} size={16} /> {peek.mode === "fjall" ? "Fjällförsvar" : "Topptur"} · {peek.quizTitle}
+              <Icon name={MODE_INFO[peek.mode].icon} size={16} /> {MODE_INFO[peek.mode].name} · {peek.quizTitle}
             </span>
           </div>
           <div className={s.bigAvatar}>
@@ -243,6 +245,7 @@ function Play({ code, token, onLost }: { code: string; token: string; onLost: ()
   if (view.phase === "ended") return <Finish view={view} />;
   if (view.phase === "lobby") return <Lobby view={view} />;
   if (view.mode === "fjall") return <DefenseGame view={view} act={act} clockOffset={offset} />;
+  if (view.mode === "jakt") return <ChaseGame view={view} act={act} clockOffset={offset} />;
   return <Topptur view={view} act={act} offset={offset} />;
 }
 
@@ -278,13 +281,15 @@ function Lobby({ view }: { view: PlayerView }) {
         <div className="card card-pad" style={{ marginTop: 22, maxWidth: 460, textAlign: "left" }}>
           <div className="row gap-12">
             <span className="chip chip-brand">
-              <Icon name={view.mode === "fjall" ? "hammer" : "mountain"} size={14} />
-              {view.mode === "fjall" ? "Fjällförsvar" : "Topptur"}
+              <Icon name={MODE_INFO[view.mode].icon} size={14} />
+              {MODE_INFO[view.mode].name}
             </span>
             <strong>{view.quizTitle}</strong>
           </div>
           <p className="muted" style={{ marginTop: 10, fontSize: "0.94rem" }}>
-            {view.mode === "fjall"
+            {view.mode === "jakt"
+              ? `Kör undan polisen i ${view.settings.minutes} minuter. När mätaren är full kommer en fråga – rätt svar ger en stjärna. Flest stjärnor vinner. Blir du fast tappar du en.`
+              : view.mode === "fjall"
               ? `Försvara stugan mot trollen i ${view.settings.minutes} minuter. Svara rätt för att få virke, bygg torn med virket. Trollen väntar inte medan du svarar!`
               : `${view.total} frågor i ${view.legSizes.length === 3 ? "tre etapper" : "en etapp"}. Rätt svar tar dig 100 m upp, snabbhet ger bara lite extra. Du har en Joker som tar bort två fel svar.`}
           </p>
@@ -599,7 +604,7 @@ function LegScreen({ view, act }: { view: PlayerView; act: (a: PlayerAction) => 
 
 /* ---------- Slut ---------- */
 
-export function computeEarned(final: FinalStats, mode: "topptur" | "fjall", bestAccuracy: number) {
+export function computeEarned(final: FinalStats, mode: GameMode, bestAccuracy: number) {
   const acc = final.answered ? final.correct / final.answered : 0;
   const personalBest = acc > bestAccuracy && final.answered >= 6;
   const earned: { label: string; amount: number }[] = [
@@ -609,6 +614,7 @@ export function computeEarned(final: FinalStats, mode: "topptur" | "fjall", best
   if (final.bestStreak >= 5) earned.push({ label: `${final.bestStreak} rätt i rad`, amount: 10 });
   if (personalBest) earned.push({ label: "Nytt personbästa", amount: 15 });
   if (mode === "fjall" && (final.wave ?? 0) >= 5) earned.push({ label: `Klarade ${final.wave} vågor`, amount: Math.min(25, (final.wave ?? 0) * 2) });
+  if (mode === "jakt" && (final.stars ?? 0) >= 3) earned.push({ label: `${final.stars} stjärnor`, amount: Math.min(25, (final.stars ?? 0) * 3) });
   if (final.rank <= 3) earned.push({ label: `Plats ${final.rank}`, amount: [20, 15, 10][final.rank - 1] });
   return { earned, personalBest };
 }
@@ -634,6 +640,8 @@ function Finish({ view }: { view: PlayerView }) {
       bestStreak: f.bestStreak,
       score: f.score,
       wave: f.wave,
+      stars: f.stars,
+      busts: f.busts,
       earned,
       xp: f.correct * 10 + 30,
       personalBest,
@@ -647,16 +655,17 @@ function Finish({ view }: { view: PlayerView }) {
       sessionStorage.removeItem(`klura-player-${view.code}`);
     } catch {}
     // Ingen cleanup: omdirigeringen ska ske även om effekten körs om (StrictMode)
-    setTimeout(() => router.push("/spela/resultat"), view.mode === "fjall" ? 2200 : 300);
+    setTimeout(() => router.push("/spela/resultat"), view.mode !== "topptur" ? 2200 : 300);
   }, [view, recordMatch, router]);
   return (
     <div className={s.shell}>
       <main id="innehall" className={s.center}>
         <Avatar skin={view.you.skinId} size={110} className="anim-bob" style={{ margin: "0 auto" }} />
         <h1 className={s.introBig} style={{ marginTop: 10 }}>
-          {view.mode === "fjall" ? "Tiden är ute!" : "Matchen är slut"}
+          {view.mode !== "topptur" ? "Tiden är ute!" : "Matchen är slut"}
         </h1>
         {view.final?.wave !== undefined && <p className="muted">Du försvarade stugan i {view.final.wave} vågor.</p>}
+        {view.final?.stars !== undefined && <p className="muted">Du samlade {view.final.stars} {view.final.stars === 1 ? "stjärna" : "stjärnor"}.</p>}
       </main>
     </div>
   );

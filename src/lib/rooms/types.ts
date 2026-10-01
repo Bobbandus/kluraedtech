@@ -6,14 +6,17 @@ import type { Subject } from "@/components/cover";
  * LocalTransport (demo i webbläsaren) och av servern (src/server).
  */
 
-export type GameMode = "topptur" | "fjall";
+export type GameMode = "topptur" | "fjall" | "jakt";
+
+/** Lägen där varje elev svarar i egen takt (inte gemensamma frågor). */
+export const selfPaced = (m: GameMode) => m !== "topptur";
 
 export interface RoomSettings {
   mode: GameMode;
   energy: Energy;
   longerTime: boolean;
   randomNames: boolean;
-  /** Matchlängd för Fjällförsvar */
+  /** Matchlängd för lägen i egen takt (Fjällförsvar, Biljakt) */
   minutes: number;
   className?: string;
 }
@@ -61,6 +64,7 @@ export interface BoardRow {
   score: number;
   correct: number;
   wave?: number;
+  stars?: number;
 }
 
 export interface HostView {
@@ -71,7 +75,7 @@ export interface HostView {
   phase: Phase;
   serverNow: number;
   paused: boolean;
-  players: (BoardRow & { answered: number; bestStreak: number; hp?: number; downed?: boolean })[];
+  players: (BoardRow & { answered: number; bestStreak: number; hp?: number; downed?: boolean; x?: number; y?: number; a?: number; busted?: boolean; busts?: number })[];
   // Topptur
   qIndex: number;
   total: number;
@@ -104,6 +108,8 @@ export interface FinalStats {
   bestStreak: number;
   score: number;
   wave?: number;
+  stars?: number;
+  busts?: number;
   missed: MissedQuestion[];
 }
 
@@ -164,6 +170,14 @@ export interface FjallReport {
   hp: number;
   score: number;
   downed: boolean;
+  // Biljakt
+  stars?: number;
+  busts?: number;
+  /** Position i staden, 0..1 */
+  x?: number;
+  y?: number;
+  a?: number;
+  busted?: boolean;
 }
 
 export type PlayerAction =

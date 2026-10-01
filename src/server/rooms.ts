@@ -69,7 +69,7 @@ export function sanitizeQuiz(raw: unknown): RoomQuiz | string {
 export function sanitizeSettings(raw: unknown): RoomSettings {
   const s = (raw ?? {}) as Partial<RoomSettings>;
   return {
-    mode: s.mode === "fjall" ? "fjall" : "topptur",
+    mode: s.mode === "fjall" || s.mode === "jakt" ? s.mode : "topptur",
     energy: s.energy === "lugn" || s.energy === "fullfart" ? s.energy : "standard",
     longerTime: !!s.longerTime,
     randomNames: !!s.randomNames,
