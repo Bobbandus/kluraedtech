@@ -6,7 +6,7 @@ import { Avatar } from "@/components/avatar";
 import { Icon } from "@/components/icons";
 import { GnistaIcon, PlusBadge } from "@/components/brand";
 import { CountUp } from "@/components/game/parts";
-import { SKINS, RARITY, type Skin } from "@/data/skins";
+import { SKINS, RARITY, ALPHA_SKIN, type Skin } from "@/data/skins";
 import { useHydrated, useStore, levelFromXp } from "@/lib/store";
 import s from "./shop.module.css";
 
@@ -36,6 +36,7 @@ export default function Shop() {
     if (u.kind === "niva") return level >= u.level ? "Upplåst" : `Nivå ${u.level}`;
     if (u.kind === "bedrift") return "Bedrift";
     if (u.kind === "plus") return "Plus";
+    if (u.kind === "alfa") return "Early alpha";
     return "Ägd";
   };
 
@@ -55,6 +56,20 @@ export default function Shop() {
             {hydrated ? <CountUp value={st.gnistor} /> : "–"}
           </div>
         </div>
+
+        {hydrated && st.owned.includes(ALPHA_SKIN) && (
+          <button className={s.alpha} onClick={() => setOpen(SKINS.find((x) => x.id === ALPHA_SKIN)!)}>
+            <span className={s.alphaArt}>
+              <Avatar skin={ALPHA_SKIN} size={118} className="avatar-hero" />
+            </span>
+            <span className={s.alphaText}>
+              <span className={s.alphaBadge}>Early alpha · exklusiv</span>
+              <span className={s.alphaName}>Pionjären</span>
+              <span className={s.alphaSub}>Bara för dig som spelar nu. Kan inte köpas och kommer aldrig tillbaka.</span>
+            </span>
+            <span className={s.alphaState}>{st.skinId === ALPHA_SKIN ? "Används" : "Din"}</span>
+          </button>
+        )}
 
         <section className={s.featured} aria-labelledby="utvalt">
           <div className="row between wrap gap-8">
@@ -202,7 +217,7 @@ function ItemDialog({
     <div className="backdrop" onClick={onClose} onKeyDown={(e) => e.key === "Escape" && onClose()}>
       <div className="dialog" role="dialog" aria-modal="true" aria-labelledby="item-title" onClick={(e) => e.stopPropagation()}>
         <div className={s.dialogArt} style={{ background: r.tint }}>
-          <Avatar skin={skin.id} size={160} className={justBought ? s.hop : "anim-bob"} />
+          <Avatar skin={skin.id} size={160} className={justBought ? s.hop : skin.rarity === "alfa" || skin.rarity === "legendarisk" ? "avatar-hero" : "anim-bob"} />
           {justBought && (
             <div className={s.burst} aria-hidden="true">
               {Array.from({ length: 12 }, (_, i) => {
@@ -256,6 +271,10 @@ function ItemDialog({
             ) : u.kind === "bedrift" ? (
               <div className="chip chip-warn" style={{ height: "auto", padding: "12px 14px", width: "100%", whiteSpace: "normal" }}>
                 <Icon name="trophy" size={16} /> Bedrift: {u.text}. Kan inte köpas.
+              </div>
+            ) : u.kind === "alfa" ? (
+              <div className="chip" style={{ height: "auto", padding: "12px 14px", width: "100%", whiteSpace: "normal" }}>
+                Delades ut till alla som spelade under early alpha.
               </div>
             ) : u.kind === "plus" ? (
               <div className="stack gap-8">

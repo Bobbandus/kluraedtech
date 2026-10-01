@@ -9,6 +9,7 @@ import { Icon, type IconName } from "./icons";
 import { useHydrated, useStore } from "@/lib/store";
 import { DEMO_MODE } from "@/lib/backend";
 import { authApi } from "@/lib/backend/auth-client";
+import { AlphaGift } from "./AlphaGift";
 import s from "./nav.module.css";
 
 const STUDENT_LINKS: { href: string; label: string; icon: IconName }[] = [
@@ -47,6 +48,7 @@ export function StudentNav() {
           </div>
         </div>
       </header>
+      <AlphaGift />
       <nav className={s.tabs} aria-label="Elevmeny">
         {STUDENT_LINKS.map((l) => (
           <Link key={l.href} href={l.href} className={`${s.tab} ${path.startsWith(l.href) ? s.tabActive : ""}`}>

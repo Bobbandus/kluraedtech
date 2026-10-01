@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
 import { MY_QUIZZES, type Quiz } from "@/data/quizzes";
-import { STARTER_SKINS } from "@/data/skins";
+import { ALPHA_SKIN, STARTER_SKINS } from "@/data/skins";
 import type { SessionResult } from "@/lib/results";
 
 /**
@@ -59,6 +59,8 @@ interface StudentState {
   lastMatch: LastMatch | null;
   /** Framtid: koppling till konto/skola/klass */
   accountId: string | null;
+  /** Har sett presentdialogen för early alpha-figuren */
+  alphaGiftSeen: boolean;
 }
 
 interface TeacherState {
@@ -89,6 +91,7 @@ interface Actions {
   toggleFavorite: (id: string) => void;
   addSession: (r: SessionResult) => void;
   setPrefs: (p: Partial<Prefs>) => void;
+  dismissAlphaGift: (equipIt: boolean) => void;
 }
 
 export type Store = { student: StudentState; teacher: TeacherState; prefs: Prefs } & Actions;
@@ -129,6 +132,7 @@ export const useStore = create<Store>()(
         quests: START_QUESTS,
         lastMatch: null,
         accountId: null,
+        alphaGiftSeen: false,
       },
       teacher: {
         loggedIn: false,
@@ -206,11 +210,23 @@ export const useStore = create<Store>()(
         }),
       addSession: (r) => set((s) => ({ teacher: { ...s.teacher, sessions: [r, ...s.teacher.sessions.filter((x) => x.id !== r.id)] } })),
       setPrefs: (p) => set((s) => ({ prefs: { ...s.prefs, ...p } })),
+      dismissAlphaGift: (equipIt) =>
+        set((s) => ({ student: { ...s.student, alphaGiftSeen: true, skinId: equipIt ? ALPHA_SKIN : s.student.skinId } })),
     }),
     {
       name: "klura-v1",
       storage: createJSONStorage(() => localStorage),
       skipHydration: true,
+      version: 2,
+      // Alla som redan spelar får early alpha-figuren
+      migrate: (persisted) => persisted as Store,
+      merge: (persisted, current) => {
+        const p = (persisted ?? {}) as Partial<Store>;
+        const student = { ...current.student, ...(p.student ?? {}) };
+        if (!student.owned.includes(ALPHA_SKIN)) student.owned = [...student.owned, ALPHA_SKIN];
+        if (student.alphaGiftSeen === undefined) student.alphaGiftSeen = false;
+        return { ...current, ...p, student, teacher: { ...current.teacher, ...(p.teacher ?? {}) }, prefs: { ...current.prefs, ...(p.prefs ?? {}) } };
+      },
     },
   ),
 );

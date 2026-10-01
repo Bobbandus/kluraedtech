@@ -1,4 +1,4 @@
-export type Rarity = "vanlig" | "ovanlig" | "sallsynt" | "episk" | "legendarisk";
+export type Rarity = "vanlig" | "ovanlig" | "sallsynt" | "episk" | "legendarisk" | "alfa";
 
 export const RARITY: Record<Rarity, { label: string; color: string; tint: string }> = {
   vanlig: { label: "Vanlig", color: "var(--r-vanlig)", tint: "#eef0ef" },
@@ -6,6 +6,7 @@ export const RARITY: Record<Rarity, { label: string; color: string; tint: string
   sallsynt: { label: "Sällsynt", color: "var(--r-sallsynt)", tint: "#e5eefb" },
   episk: { label: "Episk", color: "var(--r-episk)", tint: "#efe9fb" },
   legendarisk: { label: "Legendarisk", color: "var(--r-legendarisk)", tint: "#fff1dc" },
+  alfa: { label: "Early alpha", color: "#c98a00", tint: "linear-gradient(145deg, #142445 0%, #1d3a5f 55%, #0f4a45 100%)" },
 };
 
 export type Unlock =
@@ -13,7 +14,8 @@ export type Unlock =
   | { kind: "gnistor"; price: number }
   | { kind: "niva"; level: number }
   | { kind: "bedrift"; text: string }
-  | { kind: "plus" };
+  | { kind: "plus" }
+  | { kind: "alfa" };
 
 export interface Skin {
   id: string;
@@ -23,7 +25,11 @@ export interface Skin {
   blurb: string;
 }
 
+/** Delas ut till alla som spelar under early alpha. Kommer aldrig tillbaka. */
+export const ALPHA_SKIN = "pionjar";
+
 export const SKINS: Skin[] = [
+  { id: "pionjar", name: "Pionjären", rarity: "alfa", unlock: { kind: "alfa" }, blurb: "Var här från första dagen. Bär norrskenet i ryggen och kompassen i hjärtat." },
   { id: "kisel", name: "Kisel", rarity: "vanlig", unlock: { kind: "start" }, blurb: "Säger inte mycket. Svarar rätt ändå." },
   { id: "mosse", name: "Mosse", rarity: "vanlig", unlock: { kind: "start" }, blurb: "Växer lite för varje rätt svar." },
   { id: "kotte", name: "Kotte", rarity: "vanlig", unlock: { kind: "start" }, blurb: "Föll från en tall. Landade på fötterna." },
@@ -48,4 +54,4 @@ export const SKINS: Skin[] = [
 
 export const skinById = (id: string) => SKINS.find((s) => s.id === id) ?? SKINS[0];
 
-export const STARTER_SKINS = SKINS.filter((s) => s.unlock.kind === "start").map((s) => s.id);
+export const STARTER_SKINS = [...SKINS.filter((s) => s.unlock.kind === "start").map((s) => s.id), ALPHA_SKIN];

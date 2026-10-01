@@ -33,7 +33,7 @@ export default function Profile() {
       <main id="innehall" className="page" style={{ paddingBottom: 120, maxWidth: 980 }}>
         <section className="card" style={{ padding: 24, borderRadius: 28, display: "flex", gap: 24, alignItems: "center", flexWrap: "wrap" }}>
           <div style={{ width: 132, height: 132, borderRadius: 36, background: RARITY[skin.rarity].tint, display: "grid", placeItems: "center", flex: "none" }}>
-            <Avatar skin={st.skinId} size={108} className="anim-bob" />
+            <Avatar skin={st.skinId} size={108} className={skin.rarity === "alfa" || skin.rarity === "legendarisk" ? "avatar-hero" : "anim-bob"} />
           </div>
           <div className="grow" style={{ minWidth: 220 }}>
             {editing ? (

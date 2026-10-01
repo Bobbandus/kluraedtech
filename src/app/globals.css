@@ -560,6 +560,42 @@ canvas {
   50% { transform: scale(1.05); }
 }
 
+/* Figurer: glöd för exklusiva/legendariska i stort format */
+@keyframes aura-pulse {
+  0%, 100% { filter: drop-shadow(0 0 8px rgba(95, 224, 200, 0.45)); }
+  50% { filter: drop-shadow(0 0 20px rgba(255, 201, 60, 0.6)); }
+}
+@keyframes kl-spin {
+  to { transform: rotate(360deg); }
+}
+@keyframes kl-twinkle {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.25; }
+}
+@keyframes kl-pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.35); }
+}
+.avatar-hero {
+  animation: aura-pulse 3.2s ease-in-out infinite;
+}
+.kl-spin {
+  transform-box: view-box;
+  transform-origin: 50px 55px;
+  animation: kl-spin 26s linear infinite;
+}
+.kl-twinkle {
+  animation: kl-twinkle 2.6s ease-in-out infinite;
+}
+.kl-twinkle-2 {
+  animation-delay: -1.3s;
+}
+.kl-pulse {
+  transform-box: view-box;
+  transform-origin: 50px 8px;
+  animation: kl-pulse 2.2s ease-in-out infinite;
+}
+
 .anim-rise { animation: rise-in 0.4s var(--ease-out) both; }
 .anim-pop { animation: pop-in 0.35s var(--ease-spring) both; }
 .anim-bob { animation: bob 2.4s ease-in-out infinite; }
