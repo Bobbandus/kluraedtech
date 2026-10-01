@@ -12,7 +12,7 @@ import type { GameTransport } from "./transport";
  */
 
 const rooms = new Map<string, Room>();
-const ROTATION = ["stormaktstiden", "kroppen", "procent", "vikingatiden", "periodiska", "kallkritik", "irregular-verbs", "sveriges-landskap", "demokrati"];
+const ROTATION = ["manskliga-rattigheter", "lag-och-ratt", "demokrati-diktatur", "syslojd", "stormaktstiden", "kroppen", "procent", "vikingatiden", "periodiska", "kallkritik", "irregular-verbs", "sveriges-landskap", "demokrati"];
 
 function newCode(): string {
   let c = "";

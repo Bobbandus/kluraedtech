@@ -6,8 +6,9 @@ import { Providers } from "@/components/providers";
 
 export const metadata: Metadata = {
   title: { default: "Klura – quiz där kunskap vinner", template: "%s · Klura" },
-  description: "Klura är ett multiplayer-quiz för klassrummet där kunskap är den viktigaste skillen. Gå med med en kod, klättra mot toppen.",
+  description: "Klura är quizspel för klassrummet där kunskap vinner. Tre spellägen – Biljakt, Fjällförsvar och Topptur – färdiga quiz för åk 7–9 och resultat som visar vad klassen behöver repetera.",
   icons: { icon: "/icon.svg" },
+  openGraph: { title: "Klura – quiz där kunskap vinner", description: "Quizspel för klassrummet: Biljakt, Fjällförsvar och Topptur. Gratis att börja.", locale: "sv_SE", type: "website", siteName: "Klura" },
 };
 
 export const viewport: Viewport = {

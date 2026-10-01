@@ -108,7 +108,7 @@ export const ENEMIES: Record<EnemyKind, EnemyDef> = {
 
 export const START_WOOD = 100;
 export const START_HP = 20;
-export const FIRST_BREAK = 7;
+export const FIRST_BREAK = 10;
 export const WAVE_BREAK = 5;
 export const SPAWN_GAP = 0.85;
 export const REPAIR_PER_CORRECT = 4;

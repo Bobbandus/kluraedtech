@@ -17,12 +17,12 @@ import DefensePreview from "@/components/game/defense/DefensePreview";
 import { MountainScene } from "@/components/scene";
 import s from "./admin.module.css";
 
-const SHOW_QUIZZES = ["stormaktstiden", "kroppen", "procent", "vikingatiden", "periodiska", "sveriges-landskap", "demokrati", "irregular-verbs"];
+const SHOW_QUIZZES = ["manskliga-rattigheter", "demokrati-diktatur", "lag-och-ratt", "syslojd", "stormaktstiden", "kroppen", "procent", "vikingatiden", "periodiska", "sveriges-landskap", "demokrati", "irregular-verbs"];
 
 const MODES: { id: GameMode; text: string; quiz: string }[] = [
-  { id: "jakt", text: "Eleven kör en egen bil genom stan med polisen efter sig. Full mätare ger en fråga – rätt svar ger en stjärna.", quiz: "stormaktstiden" },
+  { id: "jakt", text: "Eleven kör en egen bil genom stan med polisen efter sig. Full mätare ger en fråga – rätt svar ger en stjärna.", quiz: "manskliga-rattigheter" },
   { id: "fjall", text: "Varje elev försvarar sin stuga mot troll. Rätt svar ger virke att bygga torn för.", quiz: "kroppen" },
-  { id: "topptur", text: "Alla svarar på samma fråga samtidigt och klättrar mot toppen. Läraren styr tempot.", quiz: "vikingatiden" },
+  { id: "topptur", text: "Alla svarar på samma fråga samtidigt och klättrar mot toppen. Läraren styr tempot.", quiz: "lag-och-ratt" },
 ];
 
 const LINKS: { group: string; items: { href: string; label: string; icon: IconName; note: string }[] }[] = [

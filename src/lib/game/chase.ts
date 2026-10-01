@@ -538,7 +538,13 @@ export interface CarSpec {
   grip: number;
 }
 
-export const PLAYER_SPEC: CarSpec = { accel: 430, vmax: 440, turn: 3.3, grip: 9 };
+export const PLAYER_SPEC: CarSpec = { accel: 400, vmax: 440, turn: 3.4, grip: 10 };
+
+/** Spelarens bil: lite lugnare i början, snabbare ju fler stjärnor man har. */
+export function playerSpec(s: { stars: number; energy: Energy }): CarSpec {
+  const base = s.energy === "lugn" ? 330 : s.energy === "fullfart" ? 400 : 365;
+  return { ...PLAYER_SPEC, vmax: Math.min(PLAYER_SPEC.vmax, base + s.stars * 7) };
+}
 export const CAR_RADIUS = 17;
 
 export interface EnergyTuning {
@@ -555,9 +561,9 @@ export const TUNING: Record<Energy, EnergyTuning> = {
   fullfart: { heatBase: 1 / 9, policeStart: 2, policePerStar: 0.67, policeMax: 8, policeSpeed: 0.94 },
 };
 
-export function policeSpec(stars: number, t: EnergyTuning): CarSpec {
+export function policeSpec(stars: number, t: EnergyTuning, playerVmax = PLAYER_SPEC.vmax): CarSpec {
   const k = Math.min(1.02, t.policeSpeed + stars * 0.012);
-  return { accel: 470, vmax: PLAYER_SPEC.vmax * k, turn: 3.5, grip: 10 };
+  return { accel: 450, vmax: playerVmax * k, turn: 3.5, grip: 10 };
 }
 
 /* ---------- Tillstånd ---------- */
@@ -921,7 +927,7 @@ function policeTarget(s: ChaseState, p: Car): [number, number] {
 }
 
 function drivePolice(s: ChaseState, p: Car, dt: number): number {
-  const spec = policeSpec(s.stars, s.tuning);
+  const spec = policeSpec(s.stars, s.tuning, playerSpec(s).vmax);
   const [tx, ty] = policeTarget(s, p);
   let desired = Math.atan2(ty - p.y, tx - p.x);
   // Håll lite avstånd till andra poliser
@@ -967,7 +973,8 @@ export function step(s: ChaseState, realDt: number) {
   }
 
   updateFlow(s);
-  const spec = s.boost > 0 ? { ...PLAYER_SPEC, vmax: PLAYER_SPEC.vmax * 1.25, accel: PLAYER_SPEC.accel * 2 } : PLAYER_SPEC;
+  const base = playerSpec(s);
+  const spec = s.boost > 0 ? { ...base, vmax: base.vmax * 1.25, accel: base.accel * 2 } : base;
   const steer = s.phase === "question" ? 0 : s.input.steer;
   const brake = s.phase === "question" ? false : s.input.brake;
   const hit = drive(s, pl, spec, steer, brake, dt);

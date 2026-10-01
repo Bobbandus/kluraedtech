@@ -10,7 +10,8 @@ export type Subject =
   | "fysik"
   | "svenska"
   | "samhalle"
-  | "musik";
+  | "musik"
+  | "slojd";
 
 export const SUBJECTS: Record<Subject, { label: string; bg: string; fg: string }> = {
   historia: { label: "Historia", bg: "#f3dfc4", fg: "#8a4b1d" },
@@ -23,9 +24,19 @@ export const SUBJECTS: Record<Subject, { label: string; bg: string; fg: string }
   svenska: { label: "Svenska", bg: "#dde9f6", fg: "#24507d" },
   samhalle: { label: "Samhällskunskap", bg: "#f7e3d0", fg: "#8b4513" },
   musik: { label: "Musik", bg: "#f9dceb", fg: "#962d63" },
+  slojd: { label: "Slöjd", bg: "#efe3d3", fg: "#7a5230" },
 };
 
 const MOTIF: Record<Subject, (fg: string) => ReactNode> = {
+  slojd: (fg) => (
+    <>
+      <rect x="104" y="40" width="60" height="58" rx="8" fill={fg} opacity=".85" />
+      <rect x="104" y="40" width="60" height="58" rx="8" fill="none" stroke="#fff" strokeWidth="3" strokeDasharray="6 5" opacity=".7" />
+      <path d="M176 100 222 30" stroke={fg} strokeWidth="5" strokeLinecap="round" />
+      <ellipse cx="219" cy="35" rx="3" ry="6" fill="#fff" transform="rotate(33 219 35)" />
+      <path d="M176 100c-8 10-26 12-40 6s-30-2-38 8" stroke={fg} strokeWidth="3" fill="none" strokeLinecap="round" opacity=".6" />
+    </>
+  ),
   historia: (fg) => (
     <>
       <path d="M118 72h84l-8 22h-68z" fill={fg} opacity=".9" />

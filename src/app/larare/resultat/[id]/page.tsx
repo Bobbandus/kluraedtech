@@ -119,7 +119,7 @@ export default function ResultDetail() {
             {avgStreak}
           </div>
           <div className="muted" style={{ fontWeight: 600, fontSize: "0.9rem" }}>
-            rätt i rad i snitt (längsta)
+            längsta svit i snitt (rätt i rad)
           </div>
         </div>
       </section>

@@ -14,8 +14,15 @@ import { LogoMark } from "@/components/brand";
 import { OPT_COLORS, OPT_KEYS } from "./parts";
 import ClimbScene from "./climb/ClimbScene";
 import ChaseProjector from "./chase/ChaseProjector";
+import { MODE_INFO } from "@/lib/modes";
 import { QuestionImage } from "@/components/QuestionImage";
 import s from "./host.module.css";
+
+const LOBBY_RULES: Record<HostView["mode"], string> = {
+  jakt: "Kör undan polisen. När mätaren är full kommer en fråga – rätt svar ger en stjärna. Flest stjärnor vinner.",
+  fjall: "Försvara stugan mot trollen. Rätt svar ger virke till nya torn. Trollen väntar inte medan du funderar.",
+  topptur: "Alla svarar på samma fråga. Rätt svar tar dig uppåt mot toppen – fart ger bara lite extra.",
+};
 
 function legOf(sizes: number[], q: number) {
   let acc = 0;
@@ -152,9 +159,11 @@ export default function HostGame({ code, keyboard = true }: { code: string; keyb
   const top = (
     <header className={s.top}>
       <LogoMark size={36} />
-      <span className={s.joinPill}>
-        {host}/spela <strong>{formatCode(view.code)}</strong>
-      </span>
+      {view.phase !== "lobby" && (
+        <span className={s.joinPill}>
+          {host}/spela <strong>{formatCode(view.code)}</strong>
+        </span>
+      )}
       {view.phase !== "lobby" && view.phase !== "ended" && !fj && (
         <span className={s.progress}>
           {view.legSizes.length > 1 ? `${LEG_NAMES[legIndex]} · ` : ""}Fråga {view.qIndex + 1} av {view.total}
@@ -170,27 +179,43 @@ export default function HostGame({ code, keyboard = true }: { code: string; keyb
         {top}
         <main id="innehall" className={s.main}>
           <div className={s.lobbyGrid}>
-            <div>
-              <p className={s.url}>Gå till {host}/spela och skriv</p>
+            <div className={s.joinCard}>
+              <span className={s.modeChip}>
+                <Icon name={MODE_INFO[view.mode].icon} size={16} /> {MODE_INFO[view.mode].name} · {view.quizTitle}
+              </span>
+              <ol className={s.joinSteps}>
+                <li>
+                  Gå till <strong>{host}/spela</strong>
+                </li>
+                <li>Skriv koden</li>
+              </ol>
               <div className={s.bigCode} aria-label={`Spelkod ${view.code}`}>
                 {formatCode(view.code)}
               </div>
-              <p className={s.lobbyMeta}>
-                {view.players.length} {view.players.length === 1 ? "spelare" : "spelare"} · {view.quizTitle}
-              </p>
+              <p className={s.rules}>{LOBBY_RULES[view.mode]}</p>
             </div>
-            <div className={s.players} aria-live="polite">
-              {view.players.length === 0 ? (
-                <p style={{ color: "#8fd1b6", fontSize: "1.2rem" }}>Väntar på spelare …</p>
-              ) : (
-                view.players.map((p) => (
-                  <span key={p.id} className={s.pchip}>
-                    <Avatar skin={p.skinId} size={38} /> {p.name}
-                  </span>
-                ))
-              )}
+            <div className={s.lobbyPlayers}>
+              <div className={s.playersHead}>
+                <span className={s.playersCount}>{view.players.length}</span>
+                <span>{view.players.length === 1 ? "spelare har gått med" : "spelare har gått med"}</span>
+              </div>
+              <div className={s.players} aria-live="polite">
+                {view.players.length === 0 ? (
+                  <p className={s.waiting}>Väntar på de första spelarna …</p>
+                ) : (
+                  view.players.map((p) => (
+                    <span key={p.id} className={s.pchip}>
+                      <Avatar skin={p.skinId} size={38} /> {p.name}
+                    </span>
+                  ))
+                )}
+              </div>
             </div>
           </div>
+          <svg className={s.lobbyHills} viewBox="0 0 1600 160" preserveAspectRatio="none" aria-hidden="true">
+            <path d="M0 160 L0 110 Q200 40 420 95 T860 80 T1280 60 T1600 90 L1600 160 Z" fill="rgba(255,255,255,0.05)" />
+            <path d="M0 160 L0 135 Q260 90 520 125 T1040 110 T1600 120 L1600 160 Z" fill="rgba(255,255,255,0.06)" />
+          </svg>
         </main>
         {controls}
       </div>

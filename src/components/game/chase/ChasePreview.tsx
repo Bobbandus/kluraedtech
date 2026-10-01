@@ -10,10 +10,13 @@ export default function ChasePreview({ className }: { className?: string }) {
   const canvas = useRef<HTMLCanvasElement>(null);
   useEffect(() => {
     const st = createChase(11, "standard", 4242);
+    // Börja mitt i stan
+    const mid = st.city.spawns.slice().sort((a, b) => Math.hypot(a.x - st.city.w / 2, a.y - st.city.h / 2) - Math.hypot(b.x - st.city.w / 2, b.y - st.city.h / 2))[0];
+    Object.assign(st.player, { x: mid.x, y: mid.y, a: mid.a });
     answer(st, true);
     answer(st, true);
     st.heat = 0;
-    for (let i = 0; i < 240; i++) {
+    for (let i = 0; i < 90; i++) {
       autopilot(st, 0.9);
       step(st, 1 / 30);
     }

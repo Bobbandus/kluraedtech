@@ -10,6 +10,7 @@ import { useHydrated, useStore } from "@/lib/store";
 import { useSessions } from "@/lib/quizzes";
 import { classAccuracy, conceptStats, formatDate, pct } from "@/lib/results";
 import { classesFrom, recurringWeak, repetitionQuiz } from "@/lib/classes";
+import { MODE_INFO } from "@/lib/modes";
 import s from "@/components/teacher.module.css";
 
 function greeting() {
@@ -83,24 +84,22 @@ export default function Dashboard() {
                 <Link href={`/larare/quiz/${q.id}`} className={s.thumb}>
                   <CoverArt subject={q.subject} rounded={12} />
                 </Link>
-                <Link href={`/larare/quiz/${q.id}`} className="grow">
-                  <div className={s.qTitle}>{q.title}</div>
+                <div className={s.quickMain}>
+                  <Link href={`/larare/quiz/${q.id}`} className={s.qTitle}>
+                    {q.title}
+                  </Link>
                   <div className={s.meta}>
                     <span>{q.questions.length} frågor</span>
                     <span>{q.level}</span>
-                    {q.plays ? <span>Spelat {q.plays} gånger</span> : <span>Inte spelat än</span>}
+                    {q.plays ? <span>Spelat {q.plays} {q.plays === 1 ? "gång" : "gånger"}</span> : <span>Inte spelat än</span>}
                   </div>
-                </Link>
-                <div className={s.startPair}>
-                  <Link href={`/larare/starta/${q.id}?lage=jakt`} className="btn btn-sm" aria-label={`Starta ${q.title} som Biljakt`} title="Biljakt – kör undan polisen i egen takt">
-                    <Icon name="car" size={16} /> <span className={s.startLabel}>Biljakt</span>
-                  </Link>
-                  <Link href={`/larare/starta/${q.id}?lage=fjall`} className="btn btn-primary btn-sm" aria-label={`Starta ${q.title} som Fjällförsvar`} title="Fjällförsvar – tower defense i egen takt">
-                    <Icon name="hammer" size={16} /> <span className={s.startLabel}>Fjällförsvar</span>
-                  </Link>
-                  <Link href={`/larare/starta/${q.id}?lage=topptur`} className="btn btn-sm" aria-label={`Starta ${q.title} som Topptur`} title="Topptur – gemensamma frågor på tavlan">
-                    <Icon name="mountain" size={16} /> <span className={s.startLabel}>Topptur</span>
-                  </Link>
+                  <div className={s.modePick} role="group" aria-label={`Starta ${q.title} som`}>
+                    {(["jakt", "fjall", "topptur"] as const).map((m) => (
+                      <Link key={m} href={`/larare/starta/${q.id}?lage=${m}`} className={s.modeBtn} title={MODE_INFO[m].tag}>
+                        <Icon name={MODE_INFO[m].icon} size={15} /> {MODE_INFO[m].name}
+                      </Link>
+                    ))}
+                  </div>
                 </div>
               </div>
             ))}
