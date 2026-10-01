@@ -155,6 +155,22 @@
   font-weight: 900;
   margin-bottom: 16px;
 }
+.modes {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-top: 24px;
+}
+.mode {
+  padding: 12px;
+  min-width: 0;
+}
+.modeBody {
+  padding: 14px 8px 6px;
+}
+.modeBody p {
+  margin-top: 6px;
+}
 .teacher {
   background: var(--brand-deep);
   color: #fff;
@@ -224,7 +240,8 @@
     order: -1;
     max-width: 480px;
   }
-  .steps {
+  .steps,
+  .modes {
     grid-template-columns: 1fr;
   }
   .teacher {
@@ -249,5 +266,11 @@
   }
   .artCard {
     display: none;
+  }
+}
+
+@media (max-width: 900px) {
+  .modes {
+    grid-template-columns: 1fr;
   }
 }

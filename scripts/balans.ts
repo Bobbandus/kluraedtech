@@ -5,7 +5,7 @@
  * A: 92 % rätt, ganska snabb
  * B: 73 % rätt, klickar extremt snabbt
  * C: 88 % rätt, långsam men noggrann
- * D: 55 % rätt, men får alltid de "bästa" korten (maximal tur)
+ * D: 55 % rätt (tur med gissningar kan ge enstaka bra matcher)
  * + 24 klasskamrater med spridd nivå.
  */
 import {
@@ -26,7 +26,7 @@ function makeClass(seed: number): SimPlayer[] {
     { id: "A", name: "A", skinId: "", profile: { accuracy: 0.92, pace: 0.3, jitter: 0.3 } },
     { id: "B", name: "B", skinId: "", profile: { accuracy: 0.73, pace: 0.1, jitter: 0.25 } },
     { id: "C", name: "C", skinId: "", profile: { accuracy: 0.88, pace: 0.55, jitter: 0.25 } },
-    { id: "D", name: "D", skinId: "", profile: { accuracy: 0.55, pace: 0.4, jitter: 0.35, prefers: ["kapa", "duell", "medvind"] } },
+    { id: "D", name: "D", skinId: "", profile: { accuracy: 0.55, pace: 0.4, jitter: 0.35 } },
   ];
   for (let i = 0; i < 24; i++) {
     core.push({
@@ -55,7 +55,7 @@ for (const energy of energies) {
   let winnerHadMostCorrect = 0;
   let winnerWithinOne = 0;
   for (let r = 0; r < RUNS; r++) {
-    const res = simulateMatch(1000 + r, makeClass(r), makeQuiz(5000 + r), energy, { luckyIds: ["D"] });
+    const res = simulateMatch(1000 + r, makeClass(r), makeQuiz(5000 + r), energy);
     const order = ranked(res.players);
     const w = order[0].id;
     const maxCorrect = Math.max(...order.map((p) => p.correct));
@@ -78,7 +78,7 @@ for (const energy of energies) {
 console.log("\nENDAST A–D (standard)");
 const h2h: Record<string, number> = { A: 0, B: 0, C: 0, D: 0 };
 for (let r = 0; r < RUNS; r++) {
-  const res = simulateMatch(9000 + r, makeClass(r).slice(0, 4), makeQuiz(7000 + r), "standard", { luckyIds: ["D"] });
+  const res = simulateMatch(9000 + r, makeClass(r).slice(0, 4), makeQuiz(7000 + r), "standard");
   h2h[ranked(res.players)[0].id]++;
 }
 for (const k of Object.keys(h2h)) console.log(`  ${k} vinner ${((h2h[k] / RUNS) * 100).toFixed(1).padStart(5)} %`);

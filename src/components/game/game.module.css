@@ -559,3 +559,23 @@
     display: none;
   }
 }
+
+.climbWrap {
+  max-width: 880px;
+  margin: 10px auto 0;
+}
+.legToast {
+  align-self: center;
+  padding: 8px 18px;
+  border-radius: 999px;
+  background: var(--brand-deep);
+  color: #fff;
+  font-family: var(--font-display);
+  font-weight: 900;
+  animation: pop-in 0.35s var(--ease-spring) both;
+}
+@media (max-width: 640px) {
+  .climbWrap canvas {
+    height: 80px !important;
+  }
+}

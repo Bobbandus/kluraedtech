@@ -141,7 +141,8 @@ button {
 }
 
 img,
-svg {
+svg,
+canvas {
   display: block;
   max-width: 100%;
 }

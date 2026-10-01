@@ -53,14 +53,20 @@ export default function StudentResult() {
           <p className="eyebrow" style={{ marginTop: 16 }}>
             {m.quizTitle}
           </p>
-          <h1 style={{ marginTop: 6 }}>{m.reachedSummit ? "Du nådde toppen!" : acc >= 70 ? "Starkt klättrat!" : m.personalBest ? "Nytt personbästa!" : "Bra kämpat!"}</h1>
+          <h1 style={{ marginTop: 6 }}>
+            {m.mode === "fjall" ? (acc >= 75 ? "Stugan stod pall!" : m.personalBest ? "Nytt personbästa!" : "Bra försvarat!") : m.reachedSummit ? "Du nådde toppen!" : acc >= 70 ? "Starkt klättrat!" : m.personalBest ? "Nytt personbästa!" : "Bra kämpat!"}
+          </h1>
           <p className="muted" style={{ marginTop: 6 }}>
-            {m.rank <= m.total / 2 ? `Plats ${m.rank} av ${m.total} · ${m.score.toLocaleString("sv-SE")} m` : `Du klättrade ${m.score.toLocaleString("sv-SE")} m`}
+            {m.mode === "fjall"
+              ? `${m.rank <= m.total / 2 ? `Plats ${m.rank} av ${m.total} · ` : ""}${m.wave ?? 0} vågor · ${m.score.toLocaleString("sv-SE")} poäng`
+              : m.rank <= m.total / 2
+                ? `Plats ${m.rank} av ${m.total} · ${m.score.toLocaleString("sv-SE")} m`
+                : `Du klättrade ${m.score.toLocaleString("sv-SE")} m`}
           </p>
 
           <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 10, marginTop: 22 }}>
             {[
-              { v: `${m.correct}/${m.questions}`, l: "rätt svar" },
+              { v: m.mode === "fjall" ? String(m.correct) : `${m.correct}/${m.questions}`, l: "rätt svar" },
               { v: `${acc} %`, l: "träffsäkerhet" },
               { v: String(m.bestStreak), l: "längsta rad" },
             ].map((x) => (

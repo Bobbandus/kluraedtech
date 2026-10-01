@@ -7,6 +7,8 @@ import { Gnistor, Wordmark, PlusBadge } from "./brand";
 import { Avatar } from "./avatar";
 import { Icon, type IconName } from "./icons";
 import { useHydrated, useStore } from "@/lib/store";
+import { DEMO_MODE } from "@/lib/backend";
+import { authApi } from "@/lib/backend/auth-client";
 import s from "./nav.module.css";
 
 const STUDENT_LINKS: { href: string; label: string; icon: IconName }[] = [
@@ -133,7 +135,8 @@ export function TeacherNav() {
                 </Link>
                 <button
                   role="menuitem"
-                  onClick={() => {
+                  onClick={async () => {
+                    if (!DEMO_MODE) await authApi.logout();
                     logout();
                     router.push("/");
                   }}

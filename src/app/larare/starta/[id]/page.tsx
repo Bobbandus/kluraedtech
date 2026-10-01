@@ -11,7 +11,10 @@ import { CLASSES } from "@/data/people";
 import { estimateMinutes } from "@/data/quizzes";
 import { useHydrated } from "@/lib/store";
 import { useQuiz } from "@/lib/quizzes";
-import { newCode, saveLive } from "@/lib/live";
+import { getTransport, saveHostKey } from "@/lib/backend";
+import type { GameMode } from "@/lib/rooms/types";
+import { MountainScene } from "@/components/scene";
+import DefensePreview from "@/components/game/defense/DefensePreview";
 
 export default function HostSetup() {
   const { id } = useParams<{ id: string }>();
@@ -21,9 +24,11 @@ export default function HostSetup() {
   const [energy, setEnergy] = useState<Energy>("standard");
   const [longer, setLonger] = useState(false);
   const [randomNames, setRandomNames] = useState(false);
-  const [cards, setCards] = useState(true);
+  const [mode, setMode] = useState<GameMode>("fjall");
+  const [minutes, setMinutes] = useState(8);
   const [cls, setCls] = useState("9a");
   const [starting, setStarting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   if (!hydrated) return <main className="page" />;
   if (!quiz) {
@@ -37,14 +42,22 @@ export default function HostSetup() {
     );
   }
 
-  const start = () => {
+  const start = async () => {
     setStarting(true);
-    const code = newCode();
-    const className = CLASSES.find((c) => c.id === cls)?.name;
-    saveLive({ code, quiz, settings: { energy, longerTime: longer, randomNames, cards }, className, createdAt: Date.now() });
-    router.push(`/larare/live?kod=${code}&klass=${cls}`);
+    setError(null);
+    try {
+      const className = CLASSES.find((c) => c.id === cls)?.name;
+      const { code, hostKey } = await getTransport().createRoom(
+        { id: quiz.id, title: quiz.title, subject: quiz.subject, questions: quiz.questions },
+        { mode, energy, longerTime: longer, randomNames, minutes, className },
+      );
+      saveHostKey(code, hostKey);
+      router.push(`/larare/live?kod=${code}`);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Kunde inte starta spelet.");
+      setStarting(false);
+    }
   };
-
 
   return (
     <main id="innehall" className="page" style={{ maxWidth: 1000 }}>
@@ -62,9 +75,53 @@ export default function HostSetup() {
       </div>
 
       <section style={{ marginTop: 28 }}>
+        <h2 style={{ fontSize: "1.25rem" }}>Välj spelläge</h2>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: 12, marginTop: 14 }} role="radiogroup" aria-label="Spelläge">
+          {(
+            [
+              { id: "fjall", name: "Fjällförsvar", tag: "Tower defense i egen takt", text: "Varje elev försvarar sin stuga mot troll. Rätt svar ger virke att bygga torn för. Trollen väntar inte – man måste både kunna och spela.", time: "5–12 min" },
+              { id: "topptur", name: "Topptur", tag: "Gemensamma frågor på tavlan", text: "Alla svarar på samma fråga samtidigt och klättrar mot toppen. Du styr tempot och kan pausa för att prata om svaren.", time: `ca ${estimateMinutes(quiz)} min` },
+            ] as { id: GameMode; name: string; tag: string; text: string; time: string }[]
+          ).map((m) => {
+            const on = mode === m.id;
+            return (
+              <button
+                key={m.id}
+                role="radio"
+                aria-checked={on}
+                onClick={() => setMode(m.id)}
+                className="card"
+                style={{ padding: 12, textAlign: "left", borderColor: on ? "var(--ink)" : undefined, boxShadow: on ? "0 4px 0 var(--ink)" : "0 4px 0 var(--line)", transform: on ? "translateY(-2px)" : undefined, transition: "all .15s var(--ease-out)" }}
+              >
+                {m.id === "fjall" ? <DefensePreview /> : <div style={{ borderRadius: 16, overflow: "hidden", aspectRatio: "3 / 2", background: "#dcefe7" }}><MountainScene climbers={[{ id: "a", skin: "mosse", t: 0.3 }, { id: "b", skin: "raven", t: 0.55, highlight: true }, { id: "c", skin: "kassetten", t: 0.75 }]} /></div>}
+                <div style={{ padding: "12px 6px 4px" }}>
+                  <div className="row between">
+                    <span style={{ fontFamily: "var(--font-display)", fontWeight: 900, fontSize: "1.3rem" }}>{m.name}</span>
+                    <span className="chip">{m.time}</span>
+                  </div>
+                  <div className="muted" style={{ fontWeight: 600, fontSize: "0.92rem" }}>{m.tag}</div>
+                  <p style={{ marginTop: 8, fontSize: "0.92rem", color: "var(--ink-2)" }}>{m.text}</p>
+                </div>
+              </button>
+            );
+          })}
+        </div>
+        {mode === "fjall" && (
+          <div className="row gap-8 wrap" style={{ marginTop: 14 }} role="radiogroup" aria-label="Matchlängd">
+            <span className="label" style={{ marginRight: 4 }}>Matchlängd</span>
+            {[5, 8, 12].map((m) => (
+              <button key={m} role="radio" aria-checked={minutes === m} className="chip chip-btn" aria-pressed={minutes === m} onClick={() => setMinutes(m)}>
+                {m} min
+              </button>
+            ))}
+          </div>
+        )}
+      </section>
+
+      <section style={{ marginTop: 28 }}>
         <h2 style={{ fontSize: "1.25rem" }}>Hur mycket energi tål rummet idag?</h2>
         <p className="muted" style={{ marginTop: 2 }}>
-          Samma quiz och poängsystem – det som ändras är hur mycket tävling som syns.
+          Samma quiz och regler – det som ändras är hur mycket tävling som syns.
         </p>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: 12, marginTop: 14 }} role="radiogroup" aria-label="Klassrumsenergi">
           {(Object.keys(ENERGY) as Energy[]).map((k) => {
@@ -122,7 +179,6 @@ export default function HostSetup() {
         <section className="card card-pad">
           <h2 style={{ fontSize: "1.1rem", marginBottom: 6 }}>Inställningar</h2>
           <Toggle checked={longer} onChange={setLonger} title="Längre betänketid" text="+50 % tid på varje fråga. Bra för nya begrepp eller elever som läser långsammare." />
-          <Toggle checked={cards} onChange={setCards} title="Spelkort mellan etapper" text="Eleverna väljer sköld, medvind, fokus m.m. Påverkar aldrig redan intjänad höjd." />
           <Toggle checked={randomNames} onChange={setRandomNames} title="Slumpade namn" text="Eleverna får namn som ”Klok Kotte”. Stoppar olämpliga smeknamn." />
         </section>
         <section className="card card-pad">
@@ -146,6 +202,11 @@ export default function HostSetup() {
         </section>
       </div>
 
+      {error && (
+        <p role="alert" style={{ marginTop: 16, color: "var(--lingon-dark)", fontWeight: 600, textAlign: "right" }}>
+          {error}
+        </p>
+      )}
       <div className="row gap-12 wrap" style={{ marginTop: 24, justifyContent: "flex-end" }}>
         <Link href={`/larare/quiz/${quiz.id}`} className="btn btn-lg">
           Avbryt

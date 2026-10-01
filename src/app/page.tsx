@@ -7,6 +7,8 @@ import { Wordmark, GnistaIcon } from "@/components/brand";
 import { Icon } from "@/components/icons";
 import { MountainScene } from "@/components/scene";
 import { useStore } from "@/lib/store";
+import DefensePreview from "@/components/game/defense/DefensePreview";
+import ClimbScene from "@/components/game/climb/ClimbScene";
 import { formatCode } from "@/lib/format";
 import s from "./home.module.css";
 
@@ -46,7 +48,7 @@ export default function Home() {
             <h1 className={s.title}>
               Quiz där <em>kunskap</em> vinner.
             </h1>
-            <p className={s.lead}>Svara rätt, välj dina spelkort och klättra mot toppen tillsammans med klassen.</p>
+            <p className={s.lead}>Svara rätt, bygg ditt försvar eller klättra mot toppen – tillsammans med klassen.</p>
 
             <form className={s.join} onSubmit={submit} noValidate>
               <label htmlFor="kod" className="sr-only">
@@ -113,31 +115,28 @@ export default function Home() {
         </section>
 
         <section className={s.section} aria-labelledby="sa-funkar">
-          <p className="eyebrow">Spelläget Topptur</p>
+          <p className="eyebrow">Två spellägen</p>
           <h2 id="sa-funkar" style={{ marginTop: 6 }}>
-            Tre etapper. Kunskap tar dig upp.
+            Svara rätt. Sen spelar du.
           </h2>
-          <div className={s.steps}>
-            <div className={`card ${s.step}`}>
-              <div className={s.stepNum}>1</div>
-              <h3>Svara på din egen skärm</h3>
-              <p className="muted" style={{ marginTop: 6 }}>
-                Frågan och alternativen syns hos dig. Rätt svar ger höjdmeter – att svara snabbt ger bara lite extra.
-              </p>
+          <div className={s.modes}>
+            <div className={`card ${s.mode}`}>
+              <DefensePreview />
+              <div className={s.modeBody}>
+                <h3>Fjällförsvar</h3>
+                <p className="muted">
+                  Försvara din stuga mot trollen. Varje rätt svar ger virke som du bygger torn för – men trollen väntar inte medan du funderar.
+                </p>
+              </div>
             </div>
-            <div className={`card ${s.step}`}>
-              <div className={s.stepNum}>2</div>
-              <h3>Välj ett spelkort</h3>
-              <p className="muted" style={{ marginTop: 6 }}>
-                Mellan etapperna väljer du sköld, medvind, fokus eller duell. Korten påverkar det som kommer – aldrig det du redan klättrat.
-              </p>
-            </div>
-            <div className={`card ${s.step}`}>
-              <div className={s.stepNum}>3</div>
-              <h3>Nå toppen</h3>
-              <p className="muted" style={{ marginTop: 6 }}>
-                Slå ditt eget rekord, tjäna gnistor och lås upp nya figurer – även om du inte vinner.
-              </p>
+            <div className={`card ${s.mode}`}>
+              <div style={{ borderRadius: 16, overflow: "hidden" }}>
+                <ClimbScene skin="mosse" score={520} maxScore={1200} field={[{ skinId: "raven", score: 700 }, { skinId: "kassetten", score: 300 }, { skinId: "flugis", score: 610 }]} height={180} legs={["Skogen", "Kalfjället", "Toppen"]} />
+              </div>
+              <div className={s.modeBody}>
+                <h3>Topptur</h3>
+                <p className="muted">Hela klassen svarar på samma fråga på tavlan och klättrar mot toppen. Rätt svar tar dig 100 meter upp – fart ger bara lite extra.</p>
+              </div>
             </div>
           </div>
         </section>

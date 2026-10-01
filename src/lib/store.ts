@@ -26,6 +26,8 @@ export interface Quest {
 export interface LastMatch {
   code: string;
   quizTitle: string;
+  mode?: "topptur" | "fjall";
+  wave?: number;
   rank: number;
   total: number;
   correct: number;
@@ -80,7 +82,7 @@ interface Actions {
   addGnistor: (n: number) => void;
   recordMatch: (m: LastMatch, stats: { correct: number; answered: number; bestStreak: number }) => void;
   claimQuest: (id: string) => void;
-  login: () => void;
+  login: (profile?: { name: string; school?: string }) => void;
   logout: () => void;
   saveQuiz: (q: Quiz) => void;
   deleteQuiz: (id: string) => void;
@@ -185,7 +187,10 @@ export const useStore = create<Store>()(
             },
           };
         }),
-      login: () => set((s) => ({ teacher: { ...s.teacher, loggedIn: true } })),
+      login: (profile) =>
+        set((s) => ({
+          teacher: { ...s.teacher, loggedIn: true, ...(profile ? { name: profile.name, school: profile.school || s.teacher.school } : {}) },
+        })),
       logout: () => set((s) => ({ teacher: { ...s.teacher, loggedIn: false } })),
       saveQuiz: (q) =>
         set((s) => {

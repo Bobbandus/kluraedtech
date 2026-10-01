@@ -11,7 +11,7 @@ import { ENERGY } from "@/lib/game/engine";
 import { useHydrated, useStore } from "@/lib/store";
 import { useSessions } from "@/lib/quizzes";
 import { ALL_QUIZZES, type Quiz } from "@/data/quizzes";
-import { classAccuracy, commonWrong, conceptStats, formatDate, pct, questionAccuracy } from "@/lib/results";
+import { classAccuracy, commonWrong, conceptStats, formatDate, pct, playerAccuracy, questionAccuracy } from "@/lib/results";
 
 type Sort = "rank" | "acc" | "name";
 
@@ -31,7 +31,7 @@ export default function ResultDetail() {
   const players = useMemo(() => {
     if (!r) return [];
     const list = r.players.slice();
-    if (sort === "acc") list.sort((a, b) => b.correct - a.correct);
+    if (sort === "acc") list.sort((a, b) => playerAccuracy(b, r.questions.length) - playerAccuracy(a, r.questions.length));
     if (sort === "name") list.sort((a, b) => a.name.localeCompare(b.name, "sv"));
     return list;
   }, [r, sort]);
@@ -53,7 +53,7 @@ export default function ResultDetail() {
   const concepts = conceptStats(r);
   const ordered = r.questions.map((q, i) => ({ q, i, a: questionAccuracy(q, total) }));
   const hardest = ordered.slice().sort((a, b) => a.a - b.a).slice(0, 3);
-  const support = r.players.filter((p) => p.correct / r.questions.length < 0.5);
+  const support = r.players.filter((p) => playerAccuracy(p, r.questions.length) < 0.5);
   const avgStreak = Math.round(r.players.reduce((a, p) => a + p.bestStreak, 0) / total);
 
   const makeRepetition = () => {
@@ -102,7 +102,7 @@ export default function ResultDetail() {
           <div>
             <div style={{ fontWeight: 700 }}>Klassens träffsäkerhet</div>
             <div className="muted" style={{ fontSize: "0.88rem" }}>
-              {r.players.reduce((a, p) => a + p.correct, 0)} av {total * r.questions.length} svar rätt
+              {r.players.reduce((a, p) => a + p.correct, 0)} av {r.players.reduce((a, p) => a + (p.answered || r.questions.length), 0)} svar rätt
             </div>
           </div>
         </div>
@@ -220,7 +220,8 @@ export default function ResultDetail() {
               {openQ === i && (
                 <div className="stack gap-8" style={{ padding: "0 0 16px 36px" }}>
                   {q.options.map((o, k) => {
-                    const share = total ? q.distribution[k] / total : 0;
+                    const answers = q.distribution.reduce((a, b) => a + b, 0) + q.unanswered;
+                    const share = answers ? q.distribution[k] / answers : 0;
                     return (
                       <div key={k} className="row gap-8" style={{ fontSize: "0.92rem" }}>
                         <span style={{ width: 26, height: 26, borderRadius: 8, background: OPT_COLORS[k], color: "#fff", display: "grid", placeItems: "center", fontWeight: 800, flex: "none" }}>{OPT_KEYS[k]}</span>
@@ -282,7 +283,7 @@ export default function ResultDetail() {
                     </span>
                   </td>
                   <td style={{ padding: "8px 6px" }}>
-                    {p.correct}/{r.questions.length} <span className="muted">({pct(p.correct / r.questions.length)})</span>
+                    {p.correct}/{p.answered || r.questions.length} <span className="muted">({pct(playerAccuracy(p, r.questions.length))})</span>
                   </td>
                   <td style={{ padding: "8px 6px" }}>{p.bestStreak}</td>
                   <td style={{ padding: "8px 6px", textAlign: "right", fontVariantNumeric: "tabular-nums" }}>{p.score.toLocaleString("sv-SE")} m</td>

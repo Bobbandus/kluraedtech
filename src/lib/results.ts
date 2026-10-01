@@ -123,14 +123,24 @@ export function seededHistory(): SessionResult[] {
 
 /* ---------- Analys ---------- */
 
+/** Andel rätt på en fråga. Räknar alla svar (i Fjällförsvar kan en fråga besvaras flera gånger). */
 export function questionAccuracy(q: ResultQuestion, total: number): number {
-  return total ? q.distribution[q.correct] / total : 0;
+  const answers = q.distribution.reduce((a, b) => a + b, 0) + q.unanswered;
+  const denom = answers || total;
+  return denom ? q.distribution[q.correct] / denom : 0;
 }
 
 export function classAccuracy(r: SessionResult): number {
-  const total = r.players.length * r.questions.length;
+  const answered = r.players.reduce((s, p) => s + (p.answered || 0), 0);
+  const total = answered || r.players.length * r.questions.length;
   const correct = r.players.reduce((s, p) => s + p.correct, 0);
   return total ? correct / total : 0;
+}
+
+/** Andel rätt för en elev. */
+export function playerAccuracy(p: ResultPlayer, questions: number): number {
+  const denom = p.answered || questions;
+  return denom ? p.correct / denom : 0;
 }
 
 export function conceptStats(r: SessionResult): { concept: string; accuracy: number; questions: number }[] {
@@ -139,8 +149,9 @@ export function conceptStats(r: SessionResult): { concept: string; accuracy: num
   for (const q of r.questions) {
     const key = q.concept ?? "Övrigt";
     const m = map.get(key) ?? { c: 0, t: 0, n: 0 };
+    const answers = q.distribution.reduce((a, b) => a + b, 0) + q.unanswered;
     m.c += q.distribution[q.correct];
-    m.t += n;
+    m.t += answers || n;
     m.n += 1;
     map.set(key, m);
   }

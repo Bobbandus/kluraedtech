@@ -1,5 +1,6 @@
 import { mulberry32, pick, shuffle, type BotProfile, type SimPlayer } from "@/lib/game/engine";
 import { SKINS } from "./skins";
+import { checkName } from "@/lib/moderation";
 
 export const FIRST_NAMES = [
   "Alva", "Elsa", "Wilma", "Ebba", "Saga", "Maja", "Ella", "Nora", "Freja", "Alice",
@@ -16,15 +17,9 @@ export function randomNickname(rng: () => number = Math.random): string {
   return `${pick(rng, ADJ)} ${pick(rng, NOUN)}`;
 }
 
-const BLOCKED = ["fan", "jävl", "helvet", "kuk", "fitta", "hora", "bög", "neger", "idiot", "cp", "hitler", "nazi", "fuck", "shit", "bitch"];
-
 export function nicknameProblem(name: string): string | null {
-  const n = name.trim();
-  if (n.length < 2) return "Namnet behöver minst två tecken.";
-  if (n.length > 16) return "Max 16 tecken.";
-  const low = n.toLowerCase().replace(/[^a-zåäö]/g, "");
-  if (BLOCKED.some((b) => low.includes(b))) return "Välj ett annat namn – det här går inte att använda.";
-  return null;
+  const r = checkName(name);
+  return r.ok ? null : r.reason ?? "Välj ett annat namn.";
 }
 
 export interface ClassGroup {
