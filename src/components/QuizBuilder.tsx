@@ -318,7 +318,7 @@ export default function QuizBuilder({ initial, isNew }: { initial: Quiz; isNew: 
 
       <main id="innehall" className={s.layout}>
         <aside className={`${s.side} card card-pad stack gap-16`} aria-label="Quizinställningar">
-          <CoverArt subject={quiz.subject} rounded={14} />
+          <CoverArt subject={quiz.subject} motif={quiz.cover} rounded={14} />
           <div className="field">
             <label className="label" htmlFor="b-title">
               Titel

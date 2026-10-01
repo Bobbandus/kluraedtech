@@ -82,7 +82,7 @@ export default function Dashboard() {
             {ready.slice(0, 4).map((q) => (
               <div key={q.id} className={s.quickRow}>
                 <Link href={`/larare/quiz/${q.id}`} className={s.thumb}>
-                  <CoverArt subject={q.subject} rounded={12} />
+                  <CoverArt subject={q.subject} motif={q.cover} rounded={12} />
                 </Link>
                 <div className={s.quickMain}>
                   <Link href={`/larare/quiz/${q.id}`} className={s.qTitle}>

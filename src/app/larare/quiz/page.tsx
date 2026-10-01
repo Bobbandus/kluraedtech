@@ -89,7 +89,7 @@ export default function MyQuizzes() {
           list.map((x) => (
             <div key={x.id} className={s.listRow}>
               <Link href={`/larare/quiz/${x.id}`} className={s.thumb} style={{ width: "100%" }}>
-                <CoverArt subject={x.subject} rounded={12} />
+                <CoverArt subject={x.subject} motif={x.cover} rounded={12} />
               </Link>
               <Link href={`/larare/quiz/${x.id}`} style={{ minWidth: 0 }}>
                 <div className="row gap-8 wrap">

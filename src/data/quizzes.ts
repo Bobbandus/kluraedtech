@@ -28,6 +28,8 @@ export interface Quiz {
   saves?: number;
   tags?: string[];
   featured?: boolean;
+  /** Eget omslagsmotiv (se EXTRA i cover.tsx) */
+  cover?: string;
 }
 
 export interface Creator {
@@ -484,6 +486,7 @@ export const MARKET_QUIZZES: Quiz[] = [
   },
   {
     id: "manskliga-rattigheter",
+    cover: "jordglob",
     title: "Mänskliga rättigheter",
     description: "FN:s förklaring, barnkonventionen och vad rättigheterna betyder i vardagen.",
     subject: "samhalle",
@@ -510,6 +513,7 @@ export const MARKET_QUIZZES: Quiz[] = [
   },
   {
     id: "demokrati-diktatur",
+    cover: "valurna",
     title: "Demokrati eller diktatur?",
     description: "Vad skiljer styrelseskicken åt? Val, censur, pressfrihet och maktdelning.",
     subject: "samhalle",
@@ -535,6 +539,7 @@ export const MARKET_QUIZZES: Quiz[] = [
   },
   {
     id: "lag-och-ratt",
+    cover: "vag",
     title: "Lag och rätt",
     description: "Straffmyndighet, domstolar, åklagare och vad som händer efter ett brott.",
     subject: "samhalle",
@@ -582,6 +587,78 @@ export const MARKET_QUIZZES: Quiz[] = [
       q("Trådriktningspilen på mönsterdelen ska läggas parallellt med …", ["tygets stadkant", "tygets snedkant", "bordskanten", "tygets mönster"], 0, "Stadkanten är tygets fasta kant och följer varptråden.", "Mönster"),
       q("Vad är undertråden på en symaskin?", ["Tråden på spolen under nålen", "Tråden som sitter på trådrullen överst", "Tråden i nålens öga", "En extra tråd för knappar"], 0, "Över- och undertråd låser stygnet tillsammans.", "Symaskinen"),
       q("Vad ska du alltid göra innan du byter nål på symaskinen?", ["Höja hastigheten", "Stänga av maskinen", "Byta tråd", "Sänka pressarfoten"], 1, "Då kan maskinen inte starta av misstag.", "Säkerhet"),
+    ],
+  },
+  {
+    id: "medeltiden",
+    cover: "borg",
+    title: "Medeltiden i Sverige",
+    description: "Kyrkan, ståndssamhället, digerdöden och Kalmarunionen.",
+    subject: "historia",
+    level: "Åk 7–9",
+    creatorId: "jonas",
+    updatedAt: "2026-09-24",
+    status: "klar",
+    plays: 10450,
+    saves: 1720,
+    tags: ["Medeltiden", "Kyrkan", "Ståndssamhället"],
+    questions: [
+      q("Ungefär vilka år brukar man räkna som Sveriges medeltid?", ["800–1050", "1050–1520", "1520–1718", "1718–1772"], 1, "Från kristnandet till Gustav Vasa.", "Tidslinje"),
+      q("Vilken sjukdom dödade en stor del av befolkningen på 1300-talet?", ["Smittkoppor", "Digerdöden (pesten)", "Spanska sjukan", "Kolera"], 1, "Digerdöden nådde Sverige 1350.", "Digerdöden"),
+      q("Vilka fyra stånd fanns i det medeltida samhället?", ["Adel, präster, borgare, bönder", "Kungar, riddare, munkar, slavar", "Bönder, soldater, köpmän, fiskare", "Adel, kungar, präster, tjänare"], 0, "Ståndssamhället delade in folk efter börd och yrke.", "Ståndssamhället"),
+      q("Vad var Kalmarunionen?", ["En handelsorganisation", "En union mellan Danmark, Norge och Sverige", "Ett krig mot Ryssland", "En kyrka i Kalmar"], 1, "Unionen bildades 1397 under drottning Margareta.", "Kalmarunionen"),
+      q("Vad kallades skatten som bönderna betalade till kyrkan?", ["Tionde", "Moms", "Tull", "Hyra"], 0, "En tiondel av skörden gick till kyrkan.", "Kyrkan"),
+      q("Vilka handelsmän från norra Tyskland dominerade handeln i Östersjön?", ["Vikingarna", "Hansan", "Venetianarna", "Holländarna"], 1, "Hansan hade stort inflytande i bland annat Visby och Stockholm.", "Handel"),
+      q("Vad var ett kloster?", ["En borg för adeln", "En plats där munkar eller nunnor levde och arbetade", "En marknadsplats", "Ett fängelse"], 1, "Kloster var också centrum för skrivkunnighet och vård.", "Kyrkan"),
+      q("Vem var Heliga Birgitta?", ["En drottning", "En svensk helgon som grundade en klosterorden", "En vikingakvinna", "En upptäcktsresande"], 1, "Hon grundade Birgittinorden och Vadstena kloster.", "Personer"),
+    ],
+  },
+  {
+    id: "privatekonomi",
+    cover: "mynt",
+    title: "Privatekonomi: pengar i vardagen",
+    description: "Budget, ränta, lån och vad som händer när man köper på kredit.",
+    subject: "samhalle",
+    level: "Åk 7–9",
+    creatorId: "klura",
+    updatedAt: "2026-09-23",
+    status: "klar",
+    plays: 8730,
+    saves: 1390,
+    tags: ["Ekonomi", "Privatekonomi"],
+    questions: [
+      q("Vad är en budget?", ["En plan över inkomster och utgifter", "Ett lån från banken", "En sorts aktie", "En skatt"], 0, "Med en budget ser du vad pengarna räcker till.", "Budget"),
+      q("Vad är ränta när du lånar pengar?", ["En gåva från banken", "Det du betalar för att få låna", "En rabatt", "En avgift till staten"], 1, "Ju högre ränta, desto dyrare blir lånet.", "Ränta"),
+      q("Vad händer om du betalar en räkning för sent?", ["Ingenting", "Du kan få en påminnelseavgift och dröjsmålsränta", "Räkningen försvinner", "Du får pengar tillbaka"], 1, "Obetalda skulder kan till slut hamna hos Kronofogden.", "Skulder"),
+      q("Vilken myndighet driver in obetalda skulder?", ["Skatteverket", "Kronofogden", "Polisen", "Försäkringskassan"], 1, "Kronofogden hjälper den som har pengar att få tillbaka dem.", "Skulder"),
+      q("Vad betyder ”köp nu, betala sen”?", ["Att varan är gratis", "Att du handlar på kredit och betalar senare – ofta med avgifter", "Att du får rabatt", "Att någon annan betalar"], 1, "Det är ett lån, även om det inte känns så.", "Kredit"),
+      q("Vad är en fast utgift?", ["En utgift som är ungefär lika stor varje månad, till exempel hyra", "Ett köp på rea", "En oväntad utgift", "En gåva"], 0, "Rörliga utgifter är till exempel mat och nöjen.", "Budget"),
+      q("Vad är skillnaden mellan brutto- och nettolön?", ["Ingen skillnad", "Nettolönen är det du får kvar efter skatt", "Bruttolönen är efter skatt", "Nettolön är semesterlön"], 1, "Skatten betalar bland annat skola, vård och vägar.", "Lön och skatt"),
+      q("Varför kan det vara klokt att spara en buffert?", ["För att banken kräver det", "För att klara oväntade utgifter", "För att få högre lön", "För att slippa skatt"], 1, "En buffert gör att du slipper låna när något oväntat händer.", "Sparande"),
+    ],
+  },
+  {
+    id: "traslojd",
+    cover: "sag",
+    title: "Trä- och metallslöjd: verktyg och säkerhet",
+    description: "Sågar, raspar, trä som material och säkerhet i slöjdsalen.",
+    subject: "slojd",
+    level: "Åk 7–9",
+    creatorId: "mikael",
+    updatedAt: "2026-09-22",
+    status: "klar",
+    plays: 5190,
+    saves: 910,
+    tags: ["Träslöjd", "Metallslöjd", "Säkerhet"],
+    questions: [
+      q("Varför ska man använda skyddsglasögon vid svarven och pelarborren?", ["För att se bättre", "För att skydda ögonen mot spån och flisor", "För att det ser proffsigt ut", "För att slippa damm i håret"], 1, "Spån kan flyga ut med hög fart.", "Säkerhet"),
+      q("Vilken såg använder man för att såga kurvor i tunt trä?", ["Fogsvans", "Lövsåg", "Bågfil", "Gersåg"], 1, "Lövsågen har ett tunt blad som kan svänga.", "Verktyg"),
+      q("Vad använder man en bågfil till?", ["Att såga metall", "Att hyvla trä", "Att slipa glas", "Att borra hål"], 0, "Bågfilen har fina tänder som klarar metall.", "Verktyg"),
+      q("Vad betyder det att såga ”med fibrerna”?", ["Att såga längs träets fiberriktning", "Att såga tvärs över årsringarna", "Att såga i metall", "Att såga sneda bitar"], 0, "Trä spricker och klyvs lättare längs fibrerna.", "Material"),
+      q("Varför ska långt hår vara uppsatt vid maskinerna?", ["För att det inte ska fastna i roterande delar", "För att läraren säger så", "För att det blir varmt", "För att det inte ska bli smutsigt"], 0, "Samma sak gäller lösa kläder och smycken.", "Säkerhet"),
+      q("Vilket träslag är ett vanligt barrträ i Sverige?", ["Ek", "Tall (fura)", "Björk", "Bok"], 1, "Gran och tall är våra vanligaste barrträd.", "Material"),
+      q("Vad gör man med sandpapper med lågt nummer, till exempel 80?", ["Grovslipar", "Finslipar", "Polerar", "Målar"], 0, "Lågt nummer = grövre korn.", "Ytbehandling"),
+      q("Varför spänner man fast arbetsstycket innan man borrar?", ["Så att det inte snurrar med borren", "Så att det blir rakare", "För att det går fortare", "För att spara borrar"], 0, "Ett löst arbetsstycke kan rycka och skada handen.", "Säkerhet"),
     ],
   },
 ];

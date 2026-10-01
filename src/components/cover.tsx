@@ -126,7 +126,59 @@ const MOTIF: Record<Subject, (fg: string) => ReactNode> = {
   ),
 };
 
-export function CoverArt({ subject, className, rounded = 16, height }: { subject: Subject; className?: string; rounded?: number; height?: number | string }) {
+/** Egna motiv för enskilda quiz (så att quiz i samma ämne inte ser likadana ut). */
+const EXTRA: Record<string, (fg: string) => ReactNode> = {
+  vag: (fg) => (
+    <>
+      <path d="M120 20v74M96 98h48" stroke={fg} strokeWidth="6" strokeLinecap="round" />
+      <path d="M76 36h88" stroke={fg} strokeWidth="5" strokeLinecap="round" />
+      <path d="M80 38 66 72h28zM160 38l-14 34h28z" fill="none" stroke={fg} strokeWidth="3" strokeLinejoin="round" />
+      <path d="M62 72a18 9 0 0 0 36 0zM142 72a18 9 0 0 0 36 0z" fill={fg} />
+      <circle cx="120" cy="20" r="6" fill="#fff" />
+    </>
+  ),
+  valurna: (fg) => (
+    <>
+      <path d="M104 22h34l10 10v30h-44z" fill="#fff" />
+      <path d="M114 36h22M114 44h16" stroke={fg} strokeWidth="3" strokeLinecap="round" opacity=".6" />
+      <rect x="84" y="52" width="80" height="50" rx="8" fill={fg} />
+      <rect x="104" y="58" width="40" height="5" rx="2.5" fill="#fff" opacity=".85" />
+    </>
+  ),
+  jordglob: (fg) => (
+    <>
+      <circle cx="120" cy="60" r="38" fill={fg} />
+      <path d="M82 60h76M120 22c-14 12-14 64 0 76M120 22c14 12 14 64 0 76" stroke="#fff" strokeWidth="3" fill="none" opacity=".75" />
+      <circle cx="152" cy="86" r="17" fill="#fff" />
+      <path d="M152 96s-10-6-10-12c0-4 3-6 6-6 2 0 3.5 1.2 4 2.5.5-1.3 2-2.5 4-2.5 3 0 6 2 6 6 0 6-10 12-10 12z" fill={fg} />
+    </>
+  ),
+  mynt: (fg) => (
+    <>
+      {[0, 1, 2, 3].map((i) => (
+        <ellipse key={i} cx="104" cy={92 - i * 12} rx="26" ry="9" fill={i % 2 ? "#fff" : fg} stroke={fg} strokeWidth="3" />
+      ))}
+      <circle cx="150" cy="56" r="24" fill={fg} />
+      <text x="150" y="64" textAnchor="middle" fontSize="24" fontWeight="900" fill="#fff" fontFamily="system-ui">kr</text>
+    </>
+  ),
+  borg: (fg) => (
+    <>
+      <path d="M78 102V48h12v10h10V48h12v10h16V48h12v10h10V48h12v54z" fill={fg} />
+      <path d="M110 102V80a10 10 0 0 1 20 0v22z" fill="#fff" />
+      <path d="M120 48V22l22 7-22 7" fill="#fff" stroke={fg} strokeWidth="2" />
+    </>
+  ),
+  sag: (fg) => (
+    <>
+      <path d="M70 72 170 40l6 18-100 32z" fill="#fff" stroke={fg} strokeWidth="3" strokeLinejoin="round" />
+      <path d="M76 90l4 8 6-11 6 8 6-11 6 8 6-11 6 8 6-11 6 8 6-11 6 8 6-11 6 8 6-11" stroke={fg} strokeWidth="2.5" fill="none" strokeLinejoin="round" opacity=".7" />
+      <rect x="162" y="30" width="34" height="40" rx="10" fill={fg} transform="rotate(-18 179 50)" />
+    </>
+  ),
+};
+
+export function CoverArt({ subject, className, rounded = 16, height, motif }: { subject: Subject; className?: string; rounded?: number; height?: number | string; motif?: string }) {
   const s = SUBJECTS[subject] ?? SUBJECTS.historia;
   return (
     <svg
@@ -138,7 +190,7 @@ export function CoverArt({ subject, className, rounded = 16, height }: { subject
     >
       <circle cx="26" cy="104" r="44" fill="#fff" opacity=".35" />
       <circle cx="232" cy="8" r="26" fill="#fff" opacity=".3" />
-      {MOTIF[subject](s.fg)}
+      {(motif && EXTRA[motif] ? EXTRA[motif] : MOTIF[subject])(s.fg)}
     </svg>
   );
 }

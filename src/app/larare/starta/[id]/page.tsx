@@ -71,7 +71,7 @@ export default function HostSetup() {
     <main id="innehall" className="page" style={{ maxWidth: 1000 }}>
       <div className="row gap-16 wrap">
         <div style={{ width: 120 }}>
-          <CoverArt subject={quiz.subject} rounded={14} />
+          <CoverArt subject={quiz.subject} motif={quiz.cover} rounded={14} />
         </div>
         <div className="grow">
           <p className="eyebrow">Starta spel</p>

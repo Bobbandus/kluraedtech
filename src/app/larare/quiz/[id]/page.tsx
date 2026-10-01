@@ -64,7 +64,7 @@ export default function QuizDetail() {
         <Icon name="arrowLeft" size={16} /> Tillbaka
       </button>
       <section className="card" style={{ padding: 16, borderRadius: 28, display: "grid", gridTemplateColumns: "minmax(0, 340px) minmax(0, 1fr)", gap: 24 }} data-detail>
-        <CoverArt subject={quiz.subject} rounded={20} />
+        <CoverArt subject={quiz.subject} motif={quiz.cover} rounded={20} />
         <div className="stack gap-8" style={{ padding: "6px 4px" }}>
           <div className="row gap-8 wrap">
             <span className="chip" style={{ background: SUBJECTS[quiz.subject].bg, color: SUBJECTS[quiz.subject].fg }}>

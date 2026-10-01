@@ -277,7 +277,7 @@ export default function Home() {
               if (!qz) return null;
               return (
                 <Link key={id} href={`/larare/upptack`} className={s.quiz}>
-                  <CoverArt subject={qz.subject} rounded={14} />
+                  <CoverArt subject={qz.subject} motif={qz.cover} rounded={14} />
                   <span className={s.quizSubject}>{SUBJECTS[qz.subject].label}</span>
                   <strong>{qz.title}</strong>
                   <span className={s.quizMeta}>

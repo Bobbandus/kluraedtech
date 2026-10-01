@@ -35,7 +35,7 @@ export function MarketCard({ quiz }: { quiz: Quiz }) {
   return (
     <div className={s.mcard}>
       <Link href={`/larare/quiz/${quiz.id}`} style={{ display: "contents" }}>
-        <CoverArt subject={quiz.subject} />
+        <CoverArt subject={quiz.subject} motif={quiz.cover} />
         <div className={s.mcardBody}>
           <div className="row gap-8 wrap">
             <span className="chip" style={{ background: SUBJECTS[quiz.subject].bg, color: SUBJECTS[quiz.subject].fg }}>
