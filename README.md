@@ -17,7 +17,7 @@ npm run dev          # demoläge: http://localhost:3000
 npm run build && npm run start
 ```
 
-Kräver Node 20+.
+Kräver Node 20+. Produktion (Vercel) bygger från `main`.
 
 ### Demoläge (standard, så körs Vercel)
 
