@@ -1,0 +1,27 @@
+{
+  "name": "klura",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "typecheck": "tsc --noEmit",
+    "balans": "node --experimental-strip-types scripts/balans.ts"
+  },
+  "dependencies": {
+    "@fontsource-variable/lexend": "^5.3.0",
+    "@fontsource-variable/nunito": "^5.3.0",
+    "next": "^16.3.8",
+    "react": "^19.3.0",
+    "react-dom": "^19.3.0",
+    "zustand": "^5.0.15"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.3",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "typescript": "^5.9.3"
+  },
+  "type": "module"
+}

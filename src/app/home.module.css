@@ -1,0 +1,246 @@
+.top {
+  max-width: var(--page-max);
+  margin: 0 auto;
+  height: 72px;
+  padding: 0 20px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.topLinks {
+  margin-left: auto;
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+.hero {
+  max-width: var(--page-max);
+  margin: 0 auto;
+  padding: 24px 20px 56px;
+  display: grid;
+  grid-template-columns: 1.05fr 1fr;
+  gap: 48px;
+  align-items: center;
+}
+.title {
+  font-size: clamp(2.4rem, 5.6vw, 4.1rem);
+  line-height: 1.02;
+  letter-spacing: -0.03em;
+}
+.title em {
+  font-style: normal;
+  color: var(--brand);
+  position: relative;
+  white-space: nowrap;
+}
+.title em::after {
+  content: "";
+  position: absolute;
+  left: -2px;
+  right: -2px;
+  bottom: 0.04em;
+  height: 0.2em;
+  background: var(--sol);
+  border-radius: 6px;
+  z-index: -1;
+}
+.lead {
+  margin-top: 18px;
+  font-size: 1.12rem;
+  color: var(--ink-2);
+  max-width: 34ch;
+}
+.join {
+  margin-top: 30px;
+  padding: 10px;
+  background: var(--card);
+  border: 2px solid var(--line);
+  border-radius: 22px;
+  display: flex;
+  gap: 10px;
+  max-width: 460px;
+  box-shadow: var(--shadow-1);
+}
+.codeInput {
+  flex: 1;
+  min-width: 0;
+  height: 60px;
+  border: 0;
+  background: var(--paper);
+  border-radius: 14px;
+  padding: 0 18px;
+  font-family: var(--font-display);
+  font-size: 1.6rem;
+  font-weight: 900;
+  letter-spacing: 0.14em;
+  font-variant-numeric: tabular-nums;
+}
+.codeInput::placeholder {
+  color: var(--ink-4);
+  letter-spacing: 0.08em;
+}
+.codeInput:focus {
+  outline: 3px solid var(--brand);
+  outline-offset: 0;
+}
+.joinBtn {
+  min-height: 60px;
+}
+.err {
+  margin-top: 10px;
+  color: var(--lingon-dark);
+  font-weight: 600;
+  font-size: 0.92rem;
+}
+.secondary {
+  margin-top: 22px;
+  display: flex;
+  gap: 18px;
+  flex-wrap: wrap;
+  color: var(--ink-2);
+  font-weight: 600;
+}
+.secondary a {
+  display: inline-flex;
+  gap: 6px;
+  align-items: center;
+  text-decoration: underline;
+  text-decoration-color: var(--line-2);
+  text-underline-offset: 4px;
+  text-decoration-thickness: 2px;
+}
+.secondary a:hover {
+  text-decoration-color: var(--brand);
+}
+.art {
+  position: relative;
+}
+.artCard {
+  position: absolute;
+  background: var(--card);
+  border: 2px solid var(--line);
+  border-radius: 16px;
+  padding: 10px 14px;
+  box-shadow: var(--shadow-2);
+  font-weight: 650;
+  font-size: 0.9rem;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  animation: bob 4s ease-in-out infinite;
+}
+.section {
+  max-width: var(--page-max);
+  margin: 0 auto;
+  padding: 56px 20px;
+}
+.steps {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+  margin-top: 28px;
+}
+.step {
+  padding: 24px;
+}
+.stepNum {
+  width: 36px;
+  height: 36px;
+  border-radius: 11px;
+  display: grid;
+  place-items: center;
+  background: var(--ink);
+  color: #fff;
+  font-family: var(--font-display);
+  font-weight: 900;
+  margin-bottom: 16px;
+}
+.teacher {
+  background: var(--brand-deep);
+  color: #fff;
+  border-radius: 32px;
+  padding: 48px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 40px;
+  align-items: center;
+}
+.teacher h2 {
+  color: #fff;
+  font-size: clamp(1.7rem, 3vw, 2.3rem);
+}
+.teacher p {
+  color: #c9e6d9;
+}
+.points {
+  display: grid;
+  gap: 12px;
+}
+.point {
+  display: flex;
+  gap: 14px;
+  padding: 16px;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.07);
+}
+.point strong {
+  display: block;
+  color: #fff;
+  margin-bottom: 2px;
+}
+.point span {
+  color: #c9e6d9;
+  font-size: 0.94rem;
+}
+.pointIcon {
+  flex: none;
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  background: var(--sol);
+  color: var(--ink);
+  display: grid;
+  place-items: center;
+}
+.footer {
+  max-width: var(--page-max);
+  margin: 0 auto;
+  padding: 24px 20px 48px;
+  display: flex;
+  gap: 16px;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  color: var(--ink-3);
+  font-size: 0.9rem;
+}
+
+@media (max-width: 900px) {
+  .hero {
+    grid-template-columns: 1fr;
+    gap: 28px;
+    padding-top: 8px;
+  }
+  .art {
+    order: -1;
+    max-width: 480px;
+  }
+  .steps {
+    grid-template-columns: 1fr;
+  }
+  .teacher {
+    grid-template-columns: 1fr;
+    padding: 28px 22px;
+    border-radius: 24px;
+  }
+  .hideMobile {
+    display: none !important;
+  }
+}
+@media (max-width: 480px) {
+  .join {
+    flex-direction: column;
+  }
+  .artCard {
+    display: none;
+  }
+}

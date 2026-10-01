@@ -1,0 +1,193 @@
+.bar {
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  background: color-mix(in srgb, var(--paper) 92%, transparent);
+  backdrop-filter: saturate(1.4) blur(8px);
+  border-bottom: 2px solid var(--line);
+}
+.inner {
+  max-width: var(--page-max);
+  margin: 0 auto;
+  height: 66px;
+  padding: 0 20px;
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+.links {
+  display: flex;
+  gap: 4px;
+  margin-left: 12px;
+}
+.link {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 40px;
+  padding: 0 14px;
+  border-radius: 12px;
+  font-weight: 600;
+  color: var(--ink-2);
+  transition: background 0.12s, color 0.12s;
+}
+.link:hover {
+  background: rgba(27, 36, 34, 0.06);
+  color: var(--ink);
+}
+.active {
+  background: var(--brand-tint);
+  color: var(--brand-dark);
+}
+.active:hover {
+  background: var(--brand-tint);
+  color: var(--brand-dark);
+}
+.right {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.balance {
+  display: inline-flex;
+  align-items: center;
+  height: 40px;
+  padding: 0 12px;
+  border-radius: 12px;
+  border: 2px solid var(--line);
+  background: var(--card);
+}
+.me {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 44px;
+  padding: 0 12px 0 4px;
+  border-radius: 14px;
+  border: 2px solid var(--line);
+  background: var(--card);
+  font-weight: 650;
+}
+.me:hover {
+  border-color: var(--line-2);
+}
+.meAvatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  background: var(--brand-tint);
+  display: grid;
+  place-items: center;
+}
+
+.tabs {
+  display: none;
+}
+
+@media (max-width: 760px) {
+  .links {
+    display: none;
+  }
+  .inner {
+    height: 58px;
+    padding: 0 16px;
+  }
+  .meName {
+    display: none;
+  }
+  .me {
+    padding: 0 4px;
+  }
+  .tabs {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 40;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    background: var(--card);
+    border-top: 2px solid var(--line);
+    padding: 6px 8px calc(6px + env(safe-area-inset-bottom));
+  }
+  .tab {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    padding: 6px 0;
+    border-radius: 12px;
+    font-size: 0.75rem;
+    font-weight: 650;
+    color: var(--ink-3);
+  }
+  .tabActive {
+    color: var(--brand-dark);
+    background: var(--brand-tint);
+  }
+}
+
+/* Lärare */
+.teacherMenu {
+  position: relative;
+}
+.dropdown {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 8px);
+  min-width: 230px;
+  background: var(--card);
+  border: 2px solid var(--line);
+  border-radius: 16px;
+  box-shadow: var(--shadow-2);
+  padding: 8px;
+  animation: pop-in 0.18s var(--ease-out);
+}
+.dropdown a,
+.dropdown button {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 0;
+  background: none;
+  font-weight: 550;
+  text-align: left;
+}
+.dropdown a:hover,
+.dropdown button:hover {
+  background: var(--paper);
+}
+.dropHead {
+  padding: 8px 12px 10px;
+  border-bottom: 2px solid var(--line);
+  margin-bottom: 6px;
+}
+.hideSm {
+}
+@media (max-width: 900px) {
+  .hideSm {
+    display: none !important;
+  }
+}
+.teacherTabs {
+  display: none;
+}
+@media (max-width: 760px) {
+  .teacherTabs {
+    display: flex;
+    gap: 4px;
+    overflow-x: auto;
+    padding: 8px 16px;
+    border-top: 2px solid var(--line);
+    scrollbar-width: none;
+  }
+  .teacherTabs .link {
+    flex: none;
+    height: 36px;
+    font-size: 0.9rem;
+  }
+}
