@@ -52,7 +52,7 @@ export default function Profile() {
               </form>
             ) : (
               <div className="row gap-8">
-                <h1 style={{ fontSize: "2rem" }}>{st.nickname || "Namnlös klättrare"}</h1>
+                <h1 style={{ fontSize: "2rem" }}>{st.nickname || "Välj ett smeknamn"}</h1>
                 <button className="btn btn-ghost btn-icon" onClick={() => { setDraft(st.nickname); setEditing(true); }} aria-label="Byt smeknamn">
                   <Icon name="edit" size={18} />
                 </button>

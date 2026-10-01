@@ -38,6 +38,9 @@ export default function ChaseGame({ view, act, clockOffset }: { view: PlayerView
   const [asking, setAsking] = useState(false);
   const [pops, setPops] = useState<Pop[]>([]);
   const [hint, setHint] = useState(true);
+  const [count, setCount] = useState(3);
+  const goAt = useRef(0);
+  const countRef = useRef(3);
   const [touch, setTouch] = useState(false);
   const ended = view.phase === "ended";
   const paused = view.paused;
@@ -84,7 +87,13 @@ export default function ChaseGame({ view, act, clockOffset }: { view: PlayerView
       const dt = Math.min(0.05, (now - last) / 1000);
       last = now;
       const st = stateRef.current;
-      if (!st.ended && !st.paused) step(g, dt);
+      if (!goAt.current) goAt.current = now + 3000;
+      const left = Math.ceil((goAt.current - now) / 1000);
+      if (left !== countRef.current) {
+        countRef.current = left;
+        setCount(Math.max(-1, left));
+      }
+      if (!st.ended && !st.paused && left <= 0) step(g, dt);
       // Händelser till UI
       for (const e of g.events) {
         if (e.t <= lastEvent) continue;
@@ -226,6 +235,12 @@ export default function ChaseGame({ view, act, clockOffset }: { view: PlayerView
           </span>
         ))}
       </div>
+
+      {count > -1 && count <= 3 && (
+        <div className={s.countdown} key={count} aria-live="assertive">
+          {count > 0 ? count : "Kör!"}
+        </div>
+      )}
 
       {hint && !asking && (
         <div className={s.hint}>

@@ -443,3 +443,35 @@
     animation: none;
   }
 }
+
+.countdown {
+  position: absolute;
+  top: 40%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-weight: 900;
+  font-size: clamp(4rem, 14vw, 8rem);
+  line-height: 1;
+  color: #fff;
+  text-shadow:
+    0 6px 0 rgba(0, 0, 0, 0.3),
+    0 0 30px rgba(0, 0, 0, 0.35);
+  pointer-events: none;
+  animation: countPop 1s ease-out forwards;
+}
+@keyframes countPop {
+  0% {
+    transform: translate(-50%, -50%) scale(1.6);
+    opacity: 0;
+  }
+  15% {
+    transform: translate(-50%, -50%) scale(1);
+    opacity: 1;
+  }
+  80% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
