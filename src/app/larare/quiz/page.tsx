@@ -15,6 +15,7 @@ export default function MyQuizzes() {
   const hydrated = useHydrated();
   const quizzes = useStore((x) => x.teacher.quizzes);
   const del = useStore((x) => x.deleteQuiz);
+  const save = useStore((x) => x.saveQuiz);
   const [q, setQ] = useState("");
   const [f, setF] = useState<F>("alla");
   const [confirm, setConfirm] = useState<string | null>(null);
@@ -107,6 +108,16 @@ export default function MyQuizzes() {
                 <Link href={`/larare/quiz/${x.id}/redigera`} className="btn btn-sm">
                   <Icon name="edit" size={16} /> Redigera
                 </Link>
+                <button
+                  className="btn btn-sm btn-ghost btn-icon"
+                  aria-label={`Duplicera ${x.title}`}
+                  title="Duplicera"
+                  onClick={() =>
+                    save({ ...x, id: `${x.id.split("-kopia")[0]}-kopia-${Date.now().toString(36)}`, title: `${x.title} (kopia)`, status: "utkast", updatedAt: new Date().toISOString().slice(0, 10), plays: 0 })
+                  }
+                >
+                  <Icon name="copy" size={18} />
+                </button>
                 <button className="btn btn-sm btn-ghost btn-icon" aria-label={`Ta bort ${x.title}`} onClick={() => setConfirm(x.id)}>
                   <Icon name="trash" size={18} />
                 </button>

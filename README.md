@@ -43,6 +43,7 @@ Backend-delen är en enkel enprocess-server avsedd för slutna tester. Den rikti
 | --- | --- |
 | `npm run typecheck` | TypeScript |
 | `npm run test:filter` | testar namnfiltret (svenska + engelska, leetspeak, varianter) |
+| `npm run test:import` | testar inklistring av frågor (block- och kalkylarksformat) |
 | `npm run balans` | simulerar 3 000 Topptur-matcher |
 | `npm run balans:fjall` | simulerar Fjällförsvar för olika elevtyper |
 

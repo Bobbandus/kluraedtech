@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Icon } from "./icons";
+import { QuestionImage } from "./QuestionImage";
 import { OPT_COLORS, OPT_KEYS } from "./game/parts";
 import type { Question } from "@/data/quizzes";
 
@@ -39,6 +40,7 @@ export function QuizPreview({ title, questions, onClose }: { title: string; ques
             </span>
           </div>
           <div className="card" style={{ marginTop: 14, padding: "22px 18px", textAlign: "center" }}>
+            <QuestionImage src={q.image} maxHeight={200} />
             <div style={{ fontFamily: "var(--font-display)", fontWeight: 850, fontSize: "1.35rem", lineHeight: 1.25 }}>{q.text || "Frågan saknar text"}</div>
           </div>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: 10, marginTop: 12 }}>

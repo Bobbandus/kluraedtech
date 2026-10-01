@@ -13,6 +13,7 @@ import { Icon } from "@/components/icons";
 import { LogoMark } from "@/components/brand";
 import { OPT_COLORS, OPT_KEYS } from "./parts";
 import ClimbScene from "./climb/ClimbScene";
+import { QuestionImage } from "@/components/QuestionImage";
 import s from "./host.module.css";
 
 function legOf(sizes: number[], q: number) {
@@ -278,6 +279,7 @@ export default function HostGame({ code }: { code: string }) {
         {top}
         <main id="innehall" className={s.main}>
           <div className={s.qCard} key={q.id}>
+            <QuestionImage src={q.image} maxHeight="34vh" />
             <h1 className={s.qText}>{q.text}</h1>
           </div>
           <div className={s.opts}>

@@ -93,15 +93,21 @@ const HARD: Record<string, number> = {
   "procent:4": 0.3,
 };
 
-function simulateHistory(id: string, quizId: string, classId: string, date: string, energy: Energy, seed: number): SessionResult {
+/** Samma elever i en klass vid varje lektion, så att utveckling går att följa. */
+function rosterSeed(classId: string) {
+  return classId.split("").reduce((a, c) => a * 31 + c.charCodeAt(0), 7) % 100000;
+}
+
+function simulateHistory(id: string, quizId: string, classId: string, date: string, energy: Energy, seed: number, ease = 0): SessionResult {
   const quiz = ALL_QUIZZES.find((q) => q.id === quizId)!;
   const cls = CLASSES.find((c) => c.id === classId)!;
-  const mates = makeClassmates(seed, cls.students);
+  const mates = makeClassmates(rosterSeed(classId), cls.students);
   const metas = quiz.questions.map((q, i) => ({
     options: q.options.length,
     correct: q.correct,
     time: q.time,
-    difficulty: HARD[`${quizId}:${i}`] ?? (i % 4 === 0 ? -0.08 : 0),
+    // ease > 0 = klassen har övat på området, frågorna blir "lättare"
+    difficulty: (HARD[`${quizId}:${i}`] ?? (i % 4 === 0 ? -0.08 : 0)) - ease,
   }));
   const sim = simulateMatch(seed, mates, metas, energy);
   return buildResult(id, quiz, cls.name, date, energy, sim.players, sim.distribution, sim.unanswered);
@@ -112,11 +118,26 @@ let cache: SessionResult[] | null = null;
 export function seededHistory(): SessionResult[] {
   if (cache) return cache;
   cache = [
-    simulateHistory("r-0929-9a", "stormaktstiden", "9a", "2026-09-29T09:10:00", "standard", 41),
-    simulateHistory("r-0926-ma9", "algebra-grund", "ma9", "2026-09-26T13:20:00", "lugn", 77),
-    simulateHistory("r-0923-8d", "kroppen", "8d", "2026-09-23T10:05:00", "standard", 12),
-    simulateHistory("r-0919-8b", "stormaktstiden", "8b", "2026-09-19T08:30:00", "fullfart", 93),
-    simulateHistory("r-0916-ma9", "procent", "ma9", "2026-09-16T13:15:00", "lugn", 58),
+    // 9A – SO, stigande trend under stormaktstiden
+    simulateHistory("r-0929-9a", "stormaktstiden", "9a", "2026-09-29T09:10:00", "standard", 41, 0.1),
+    simulateHistory("r-0922-9a", "stormaktstiden", "9a", "2026-09-22T09:10:00", "standard", 42, 0),
+    simulateHistory("r-0915-9a", "vikingatiden", "9a", "2026-09-15T09:15:00", "lugn", 43, 0.02),
+    simulateHistory("r-0908-9a", "demokrati", "9a", "2026-09-08T09:05:00", "standard", 44, -0.06),
+    simulateHistory("r-0901-9a", "kallkritik", "9a", "2026-09-01T09:10:00", "lugn", 45, -0.08),
+    // Matte 9 – grupp 2
+    simulateHistory("r-0926-ma9", "algebra-grund", "ma9", "2026-09-26T13:20:00", "lugn", 77, 0.06),
+    simulateHistory("r-0916-ma9", "procent", "ma9", "2026-09-16T13:15:00", "lugn", 58, 0),
+    simulateHistory("r-0909-ma9", "brak", "ma9", "2026-09-09T13:15:00", "lugn", 59, -0.04),
+    simulateHistory("r-0902-ma9", "algebra-grund", "ma9", "2026-09-02T13:20:00", "standard", 60, -0.1),
+    // 8D – NO
+    simulateHistory("r-0923-8d", "kroppen", "8d", "2026-09-23T10:05:00", "standard", 12, 0),
+    simulateHistory("r-0916-8d", "periodiska", "8d", "2026-09-16T10:00:00", "standard", 13, -0.02),
+    simulateHistory("r-0909-8d", "ellara", "8d", "2026-09-09T10:05:00", "fullfart", 14, 0.03),
+    simulateHistory("r-0902-8d", "celler", "8d", "2026-09-02T10:00:00", "standard", 15, -0.05),
+    // 8B – SO
+    simulateHistory("r-0919-8b", "stormaktstiden", "8b", "2026-09-19T08:30:00", "fullfart", 93, -0.02),
+    simulateHistory("r-0912-8b", "vikingatiden", "8b", "2026-09-12T08:30:00", "standard", 94, 0.04),
+    simulateHistory("r-0905-8b", "sveriges-landskap", "8b", "2026-09-05T08:35:00", "standard", 95, 0.02),
   ];
   return cache;
 }

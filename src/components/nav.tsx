@@ -65,6 +65,7 @@ const TEACHER_LINKS = [
   { href: "/larare", label: "Översikt", exact: true },
   { href: "/larare/quiz", label: "Mina quiz" },
   { href: "/larare/upptack", label: "Upptäck" },
+  { href: "/larare/klasser", label: "Klasser" },
   { href: "/larare/resultat", label: "Resultat" },
 ];
 

@@ -26,6 +26,7 @@ export interface RoomQuestion {
   time: number;
   explanation?: string;
   concept?: string;
+  image?: string;
 }
 
 export interface RoomQuiz {
@@ -42,6 +43,7 @@ export interface PublicQuestion {
   text: string;
   options: string[];
   time: number;
+  image?: string;
 }
 
 export type Phase = "lobby" | "question" | "reveal" | "leg" | "playing" | "ended";

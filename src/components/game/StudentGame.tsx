@@ -16,6 +16,7 @@ import { Icon } from "@/components/icons";
 import { LogoMark } from "@/components/brand";
 import { CountUp, OPT_COLORS, OPT_KEYS } from "./parts";
 import ClimbScene from "./climb/ClimbScene";
+import { QuestionImage } from "@/components/QuestionImage";
 import DefenseGame from "./defense/DefenseGame";
 import s from "./game.module.css";
 
@@ -403,6 +404,7 @@ function Topptur({ view, act, offset }: { view: PlayerView; act: (a: PlayerActio
           </div>
         )}
         <div className={s.qCard} key={q.id}>
+          <QuestionImage src={q.image} maxHeight="min(240px, 28vh)" />
           <h1 className={s.qText}>{q.text}</h1>
         </div>
         <div className={s.options} role="group" aria-label="Svarsalternativ">

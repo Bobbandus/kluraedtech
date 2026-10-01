@@ -11,7 +11,7 @@ export async function POST(req: Request) {
   if (guard) return guard;
   const user = await currentUser();
   if (!user || user.role !== "larare") return fail("Logga in som lärare för att starta ett spel.", 401);
-  const b = await body<{ quiz?: unknown; settings?: unknown }>(req);
+  const b = await body<{ quiz?: unknown; settings?: unknown }>(req, 12_000_000);
   const quiz = sanitizeQuiz(b?.quiz);
   if (typeof quiz === "string") return fail(quiz);
   const code = newCode();

@@ -413,7 +413,7 @@ export class Room {
         if (this.phase !== "playing") return { ok: false, error: "Matchen pågår inte." };
         if (!p.current) p.current = { index: this.drawCard(p), servedAt: now };
         const q = this.quiz.questions[p.current.index];
-        return { ok: true, question: { index: p.current.index, id: q.id, text: q.text, options: q.options, time: q.time } };
+        return { ok: true, question: { index: p.current.index, id: q.id, text: q.text, options: q.options, time: q.time, image: q.image } };
       }
       case "fjall_answer": {
         if (this.phase !== "playing" || !p.current) return { ok: false, error: "Ingen fråga är öppen." };
@@ -635,7 +635,7 @@ export class Room {
       qIndex: this.qIndex,
       total: this.n,
       legSizes: legSizes(this.n),
-      question: showQ && this.settings.mode === "topptur" ? { index: this.qIndex, id: q.id, text: q.text, options: q.options, time: this.limitFor(this.qIndex) } : null,
+      question: showQ && this.settings.mode === "topptur" ? { index: this.qIndex, id: q.id, text: q.text, options: q.options, time: this.limitFor(this.qIndex), image: q.image } : null,
       deadline: this.deadline,
       answered: !!rec,
       removed: p.removed[this.qIndex] ?? [],
@@ -722,5 +722,5 @@ export class Room {
 }
 
 export function publicQuestion(q: RoomQuiz["questions"][number], index: number): PublicQuestion {
-  return { index, id: q.id, text: q.text, options: q.options, time: q.time };
+  return { index, id: q.id, text: q.text, options: q.options, time: q.time, image: q.image };
 }

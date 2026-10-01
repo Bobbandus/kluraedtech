@@ -56,6 +56,8 @@ export function sanitizeQuiz(raw: unknown): RoomQuiz | string {
       correct: clamp(x?.correct, 0, Math.max(0, options.length - 1), 0),
       time: clamp(x?.time, 5, 120, 20),
       explanation: str(x?.explanation, 400) || undefined,
+      // Bara komprimerade bilder från byggaren (data-URL, max ~350 kB)
+      image: typeof x?.image === "string" && /^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+/=]+$/.test(x.image) && x.image.length < 480_000 ? x.image : undefined,
       concept: str(x?.concept, 60) || undefined,
     };
   });

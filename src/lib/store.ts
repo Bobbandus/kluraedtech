@@ -69,6 +69,8 @@ interface TeacherState {
   school: string;
   quizzes: Quiz[];
   favorites: string[];
+  /** Egna quiz som är publicerade i Upptäck */
+  published: string[];
   sessions: SessionResult[];
 }
 
@@ -89,6 +91,7 @@ interface Actions {
   saveQuiz: (q: Quiz) => void;
   deleteQuiz: (id: string) => void;
   toggleFavorite: (id: string) => void;
+  setPublished: (id: string, on: boolean) => void;
   addSession: (r: SessionResult) => void;
   setPrefs: (p: Partial<Prefs>) => void;
   dismissAlphaGift: (equipIt: boolean) => void;
@@ -140,6 +143,7 @@ export const useStore = create<Store>()(
         school: "Kvarnbackaskolan",
         quizzes: MY_QUIZZES,
         favorites: ["procent", "kallkritik"],
+        published: [],
         sessions: [],
       },
       prefs: { reducedMotion: false, sound: true },
@@ -203,6 +207,11 @@ export const useStore = create<Store>()(
           return { teacher: { ...s.teacher, quizzes } };
         }),
       deleteQuiz: (id) => set((s) => ({ teacher: { ...s.teacher, quizzes: s.teacher.quizzes.filter((x) => x.id !== id) } })),
+      setPublished: (id, on) =>
+        set((s) => {
+          const p = s.teacher.published ?? [];
+          return { teacher: { ...s.teacher, published: on ? Array.from(new Set([...p, id])) : p.filter((x) => x !== id) } };
+        }),
       toggleFavorite: (id) =>
         set((s) => {
           const f = s.teacher.favorites;

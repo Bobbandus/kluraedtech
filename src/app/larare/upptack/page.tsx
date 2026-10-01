@@ -4,7 +4,7 @@ import { useMemo, useState } from "react";
 import { Icon } from "@/components/icons";
 import { MarketCard } from "@/components/teacher-ui";
 import { SUBJECTS, type Subject } from "@/components/cover";
-import { MARKET_QUIZZES, creatorById, type Level } from "@/data/quizzes";
+import { MARKET_QUIZZES as BASE_MARKET, creatorById, type Level } from "@/data/quizzes";
 import { useHydrated, useStore } from "@/lib/store";
 import s from "@/components/teacher.module.css";
 
@@ -13,6 +13,9 @@ const LEVELS: (Level | "alla")[] = ["alla", "Åk 4–6", "Åk 7–9", "Gymnasiet
 export default function Discover() {
   useHydrated();
   const favorites = useStore((x) => x.teacher.favorites);
+  const myQuizzes = useStore((x) => x.teacher.quizzes);
+  const published = useStore((x) => x.teacher.published ?? []);
+  const MARKET_QUIZZES = useMemo(() => [...myQuizzes.filter((q) => published.includes(q.id) && q.status === "klar"), ...BASE_MARKET], [myQuizzes, published]);
   const [q, setQ] = useState("");
   const [subject, setSubject] = useState<Subject | "alla" | "sparade">("alla");
   const [level, setLevel] = useState<Level | "alla">("alla");
@@ -31,7 +34,7 @@ export default function Discover() {
     });
     list = list.sort((a, b) => (sort === "popular" ? (b.plays ?? 0) - (a.plays ?? 0) : b.updatedAt.localeCompare(a.updatedAt)));
     return list;
-  }, [q, subject, level, sort, favorites]);
+  }, [q, subject, level, sort, favorites, MARKET_QUIZZES]);
 
   const subjectsInUse = Array.from(new Set(MARKET_QUIZZES.map((x) => x.subject)));
 

@@ -1,13 +1,15 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { CoverArt } from "@/components/cover";
 import { Icon } from "@/components/icons";
 import { AccuracyRing, MarketCard } from "@/components/teacher-ui";
 import { MARKET_QUIZZES } from "@/data/quizzes";
 import { useHydrated, useStore } from "@/lib/store";
 import { useSessions } from "@/lib/quizzes";
-import { classAccuracy, conceptStats, formatDate } from "@/lib/results";
+import { classAccuracy, conceptStats, formatDate, pct } from "@/lib/results";
+import { classesFrom, recurringWeak, repetitionQuiz } from "@/lib/classes";
 import s from "@/components/teacher.module.css";
 
 function greeting() {
@@ -21,7 +23,21 @@ export default function Dashboard() {
   const hydrated = useHydrated();
   const t = useStore((x) => x.teacher);
   const sessions = useSessions();
+  const router = useRouter();
+  const save = useStore((x) => x.saveQuiz);
   if (!hydrated) return <main className="page" />;
+
+  // Förslag till nästa lektion: svagaste begreppet i klassens senaste lektioner
+  const suggestions = classesFrom(sessions)
+    .filter((c) => c.sessions.length)
+    .map((c) => {
+      const recent = c.sessions.slice(-3);
+      const w = recurringWeak(recent)[0];
+      return w ? { c, w, last: recent[recent.length - 1] } : null;
+    })
+    .filter((x): x is NonNullable<typeof x> => !!x)
+    .sort((a, b) => b.last.date.localeCompare(a.last.date))
+    .slice(0, 2);
 
   const ready = t.quizzes.filter((q) => q.status === "klar").sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
   const drafts = t.quizzes.filter((q) => q.status === "utkast");
@@ -75,15 +91,59 @@ export default function Dashboard() {
                     {q.plays ? <span>Spelat {q.plays} gånger</span> : <span>Inte spelat än</span>}
                   </div>
                 </Link>
-                <Link href={`/larare/starta/${q.id}`} className="btn btn-primary btn-sm" aria-label={`Starta ${q.title}`}>
-                  <Icon name="play" size={16} /> Starta
-                </Link>
+                <div className={s.startPair}>
+                  <Link href={`/larare/starta/${q.id}?lage=fjall`} className="btn btn-primary btn-sm" aria-label={`Starta ${q.title} som Fjällförsvar`} title="Fjällförsvar – tower defense i egen takt">
+                    <Icon name="hammer" size={16} /> <span className={s.startLabel}>Fjällförsvar</span>
+                  </Link>
+                  <Link href={`/larare/starta/${q.id}?lage=topptur`} className="btn btn-sm" aria-label={`Starta ${q.title} som Topptur`} title="Topptur – gemensamma frågor på tavlan">
+                    <Icon name="mountain" size={16} /> <span className={s.startLabel}>Topptur</span>
+                  </Link>
+                </div>
               </div>
             ))}
           </div>
         </section>
 
         <div className="stack gap-16">
+          {suggestions.length > 0 && (
+            <section className={`card card-pad ${s.nextCard}`} aria-labelledby="nasta">
+              <div className={s.sectionHead}>
+                <div>
+                  <h2 id="nasta">Till nästa lektion</h2>
+                  <p className="muted" style={{ fontSize: "0.9rem" }}>
+                    Förslag utifrån vad klasserna haft svårt med.
+                  </p>
+                </div>
+              </div>
+              <div className="stack gap-12">
+                {suggestions.map(({ c, w }) => {
+                  const n = Math.min(6, new Set(w.questions.map((q) => q.text)).size);
+                  return (
+                    <div key={c.cls.id} className={s.nextRow}>
+                      <div className="grow" style={{ minWidth: 0 }}>
+                        <div style={{ fontWeight: 700 }}>
+                          Repetera <span style={{ color: "var(--brand-dark)" }}>{w.concept}</span> med {c.cls.name}
+                        </div>
+                        <div className="muted" style={{ fontSize: "0.84rem" }}>
+                          {pct(w.accuracy)} rätt senast · {n} {n === 1 ? "fråga" : "frågor"} · ca {Math.max(2, Math.round(n * 0.6))} min
+                        </div>
+                      </div>
+                      <button
+                        className="btn btn-accent btn-sm"
+                        onClick={() => {
+                          const q = repetitionQuiz(`Repetition: ${w.concept}`, c.sessions[c.sessions.length - 1].subject, w.questions, "klar");
+                          save(q);
+                          router.push(`/larare/starta/${q.id}?lage=topptur&klass=${c.cls.id}`);
+                        }}
+                      >
+                        <Icon name="play" size={15} /> Starta
+                      </button>
+                    </div>
+                  );
+                })}
+              </div>
+            </section>
+          )}
           {drafts.length > 0 && (
             <section className="card card-pad" aria-labelledby="utkast">
               <div className={s.sectionHead}>

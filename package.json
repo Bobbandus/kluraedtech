@@ -10,7 +10,8 @@
     "balans": "node --experimental-strip-types --no-warnings scripts/balans.ts",
     "test:filter": "node --experimental-strip-types --no-warnings scripts/test-filter.ts",
     "dev:full": "NEXT_PUBLIC_DEMO_MODE=false next dev -H 0.0.0.0",
-    "balans:fjall": "node --experimental-strip-types --no-warnings scripts/balans-fjall.ts"
+    "balans:fjall": "node --experimental-strip-types --no-warnings scripts/balans-fjall.ts",
+    "test:import": "node --experimental-strip-types --no-warnings scripts/test-import.ts"
   },
   "dependencies": {
     "@fontsource-variable/lexend": "^5.3.0",

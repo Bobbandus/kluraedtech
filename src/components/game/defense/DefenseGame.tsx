@@ -26,6 +26,7 @@ import { OPT_COLORS, OPT_KEYS } from "../parts";
 import { DefenseRenderer } from "./render";
 import { drawTowerIcon } from "./sprites";
 import { useStore } from "@/lib/store";
+import { QuestionImage } from "@/components/QuestionImage";
 import s from "./defense.module.css";
 
 function fmtTime(ms: number) {
@@ -366,6 +367,7 @@ function QuestionPanel({ act, disabled, streak, onCorrect: onRight }: { act: (a:
         <p className="muted">{error ?? "Hämtar fråga …"}</p>
       ) : (
         <>
+          <QuestionImage src={q.image} maxHeight={180} />
           <h2 className={s.qText} key={q.id + (res ? "r" : "")}>
             {q.text}
           </h2>

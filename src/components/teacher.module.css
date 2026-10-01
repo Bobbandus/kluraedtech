@@ -207,3 +207,26 @@
     width: 72px;
   }
 }
+
+.startPair {
+  display: flex;
+  gap: 6px;
+  flex: none;
+}
+.nextCard {
+  border-color: #f3d39a;
+  background: linear-gradient(180deg, #fffaf0 0%, #ffffff 60%);
+}
+.nextRow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  border-radius: 16px;
+  background: var(--paper);
+}
+@media (max-width: 1100px) {
+  .startLabel {
+    display: none;
+  }
+}

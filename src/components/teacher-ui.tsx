@@ -31,6 +31,7 @@ export function MarketCard({ quiz }: { quiz: Quiz }) {
   const fav = useStore((x) => x.teacher.favorites.includes(quiz.id));
   const toggle = useStore((x) => x.toggleFavorite);
   const c = creatorById(quiz.creatorId);
+  const mine = quiz.creatorId === "sara";
   return (
     <div className={s.mcard}>
       <Link href={`/larare/quiz/${quiz.id}`} style={{ display: "contents" }}>
@@ -41,6 +42,7 @@ export function MarketCard({ quiz }: { quiz: Quiz }) {
               {SUBJECTS[quiz.subject].label}
             </span>
             <span className="chip">{quiz.level}</span>
+            {mine && <span className="chip chip-brand">Ditt quiz</span>}
           </div>
           <div className={s.mcardTitle}>{quiz.title}</div>
           <div className={s.meta}>
@@ -67,9 +69,11 @@ export function MarketCard({ quiz }: { quiz: Quiz }) {
           </div>
         </div>
       </Link>
+      {!mine && (
       <button className={s.fav} aria-pressed={fav} aria-label={fav ? "Ta bort från sparade" : "Spara quiz"} onClick={() => toggle(quiz.id)}>
         <Icon name="bookmark" size={18} />
       </button>
+      )}
     </div>
   );
 }

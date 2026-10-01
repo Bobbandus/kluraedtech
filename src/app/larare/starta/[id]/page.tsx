@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { CoverArt } from "@/components/cover";
 import { Icon } from "@/components/icons";
 import { EnergyIllu } from "@/components/EnergyIllu";
@@ -25,6 +25,13 @@ export default function HostSetup() {
   const [longer, setLonger] = useState(false);
   const [randomNames, setRandomNames] = useState(false);
   const [mode, setMode] = useState<GameMode>("fjall");
+  useEffect(() => {
+    const sp = new URLSearchParams(window.location.search);
+    const l = sp.get("lage");
+    if (l === "fjall" || l === "topptur") setMode(l);
+    const k = sp.get("klass");
+    if (k && CLASSES.some((c) => c.id === k)) setCls(k);
+  }, []);
   const [minutes, setMinutes] = useState(8);
   const [cls, setCls] = useState("9a");
   const [starting, setStarting] = useState(false);

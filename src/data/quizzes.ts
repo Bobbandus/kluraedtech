@@ -8,6 +8,8 @@ export interface Question {
   time: number;
   explanation?: string;
   concept?: string;
+  /** Bild som data-URL (komprimerad i webbläsaren) */
+  image?: string;
 }
 
 export type Level = "Åk 4–6" | "Åk 7–9" | "Gymnasiet";

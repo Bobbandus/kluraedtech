@@ -2,14 +2,15 @@
 
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { CoverArt, SUBJECTS } from "@/components/cover";
 import { Avatar } from "@/components/avatar";
 import { Icon } from "@/components/icons";
 import { QuizPreview } from "@/components/quiz-preview";
 import { fmtPlays } from "@/components/teacher-ui";
 import { OPT_KEYS } from "@/components/game/parts";
-import { creatorById, estimateMinutes } from "@/data/quizzes";
+import { creatorById, estimateMinutes, type Level, type Quiz } from "@/data/quizzes";
+import { checkText } from "@/lib/moderation";
 import { useHydrated, useStore } from "@/lib/store";
 import { useQuiz } from "@/lib/quizzes";
 import { formatDate } from "@/lib/results";
@@ -24,6 +25,15 @@ export default function QuizDetail() {
   const save = useStore((x) => x.saveQuiz);
   const [showAnswers, setShowAnswers] = useState(false);
   const [preview, setPreview] = useState(false);
+  const [publishing, setPublishing] = useState(false);
+  const [toast, setToast] = useState<string | null>(null);
+  const published = useStore((x) => (x.teacher.published ?? []).includes(id));
+  const setPublished = useStore((x) => x.setPublished);
+  useEffect(() => {
+    if (!toast) return;
+    const t = setTimeout(() => setToast(null), 2600);
+    return () => clearTimeout(t);
+  }, [toast]);
 
   if (!hydrated) return <main className="page" />;
   if (!quiz) {
@@ -98,9 +108,41 @@ export default function QuizDetail() {
               <Icon name="eye" size={18} /> Förhandsvisa
             </button>
             {mine ? (
-              <Link href={`/larare/quiz/${quiz.id}/redigera`} className="btn btn-lg">
-                <Icon name="edit" size={18} /> Redigera
-              </Link>
+              <>
+                <Link href={`/larare/quiz/${quiz.id}/redigera`} className="btn btn-lg">
+                  <Icon name="edit" size={18} /> Redigera
+                </Link>
+                <button
+                  className="btn btn-lg"
+                  onClick={async () => {
+                    const url = `${window.location.origin}/larare/quiz/${quiz.id}`;
+                    try {
+                      await navigator.clipboard.writeText(url);
+                      setToast("Länken är kopierad");
+                    } catch {
+                      setToast(url);
+                    }
+                  }}
+                >
+                  <Icon name="external" size={18} /> Dela länk
+                </button>
+                {quiz.status === "klar" &&
+                  (published ? (
+                    <button
+                      className="btn btn-lg"
+                      onClick={() => {
+                        setPublished(quiz.id, false);
+                        setToast("Quizet är inte längre publicerat");
+                      }}
+                    >
+                      <Icon name="eyeOff" size={18} /> Avpublicera
+                    </button>
+                  ) : (
+                    <button className="btn btn-lg" onClick={() => setPublishing(true)}>
+                      <Icon name="upload" size={18} /> Publicera i Upptäck
+                    </button>
+                  ))}
+              </>
             ) : (
               <>
                 <button className="btn btn-lg" onClick={copy}>
@@ -162,7 +204,93 @@ export default function QuizDetail() {
         </ol>
       </section>
       {preview && <QuizPreview title={quiz.title} questions={quiz.questions} onClose={() => setPreview(false)} />}
+      {publishing && (
+        <PublishDialog
+          quiz={quiz}
+          onClose={() => setPublishing(false)}
+          onPublish={(tags, level) => {
+            save({ ...quiz, tags, level });
+            setPublished(quiz.id, true);
+            setPublishing(false);
+            setToast("Publicerat i Upptäck!");
+          }}
+        />
+      )}
+      {toast && (
+        <div className="toast" role="status">
+          <Icon name="info" size={18} /> {toast}
+        </div>
+      )}
       <style>{`@media (max-width: 720px){ [data-detail]{ grid-template-columns: 1fr !important; } }`}</style>
     </main>
+  );
+}
+
+function PublishDialog({ quiz, onClose, onPublish }: { quiz: Quiz; onClose: () => void; onPublish: (tags: string[], level: Level) => void }) {
+  const [tags, setTags] = useState((quiz.tags ?? []).join(", "));
+  const [level, setLevel] = useState<Level>(quiz.level);
+  const content = [quiz.title, quiz.description, tags, ...quiz.questions.flatMap((q) => [q.text, ...q.options, q.explanation ?? ""])].join(" \n ");
+  const ok = checkText(content).ok;
+  const missingExpl = quiz.questions.filter((q) => !q.explanation?.trim()).length;
+  return (
+    <div className="backdrop" onClick={onClose}>
+      <div className="dialog" role="dialog" aria-modal="true" aria-labelledby="pub-t" style={{ padding: 24 }} onClick={(e) => e.stopPropagation()}>
+        <h2 id="pub-t" style={{ fontSize: "1.35rem" }}>
+          Publicera ”{quiz.title}”
+        </h2>
+        <p className="muted" style={{ marginTop: 6 }}>
+          Andra lärare kan hitta, spela och kopiera quizet i Upptäck. Ditt namn och din skola visas som skapare.
+        </p>
+        <div className="stack gap-12" style={{ marginTop: 16 }}>
+          <div className="field">
+            <label className="label" htmlFor="pub-tags">
+              Taggar <span className="muted">(kommaseparerade)</span>
+            </label>
+            <input id="pub-tags" className="input" value={tags} onChange={(e) => setTags(e.target.value)} placeholder="T.ex. 1600-talet, Krig" />
+          </div>
+          <div className="field">
+            <label className="label" htmlFor="pub-lvl">
+              Nivå
+            </label>
+            <select id="pub-lvl" className="select" value={level} onChange={(e) => setLevel(e.target.value as Level)}>
+              {(["Åk 4–6", "Åk 7–9", "Gymnasiet"] as Level[]).map((l) => (
+                <option key={l}>{l}</option>
+              ))}
+            </select>
+          </div>
+          {missingExpl > 0 && (
+            <p className="chip chip-info" style={{ height: "auto", padding: "8px 12px" }}>
+              {missingExpl} {missingExpl === 1 ? "fråga saknar" : "frågor saknar"} förklaring. Quiz med förklaringar rekommenderas oftare.
+            </p>
+          )}
+          {!ok && (
+            <p role="alert" style={{ color: "var(--lingon-dark)", fontWeight: 600 }}>
+              Quizet innehåller ord som inte är tillåtna i Upptäck. Ändra texten och försök igen.
+            </p>
+          )}
+        </div>
+        <div className="row gap-8" style={{ marginTop: 20, justifyContent: "flex-end" }}>
+          <button className="btn" onClick={onClose}>
+            Avbryt
+          </button>
+          <button
+            className="btn btn-primary"
+            disabled={!ok}
+            onClick={() =>
+              onPublish(
+                tags
+                  .split(",")
+                  .map((t) => t.trim())
+                  .filter(Boolean)
+                  .slice(0, 6),
+                level,
+              )
+            }
+          >
+            <Icon name="upload" size={16} /> Publicera
+          </button>
+        </div>
+      </div>
+    </div>
   );
 }
