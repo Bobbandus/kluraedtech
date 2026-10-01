@@ -209,6 +209,15 @@ export class Room {
     return ranked(this.players.map((p) => ({ id: p.id, name: p.name, skinId: p.skinId, score: this.scoreOf(p), correct: p.correct, wave: p.report.wave, stars: jakt ? this.starsOf(p) : undefined })));
   }
 
+  /** Låt alla simulerade klasskamrater gå med direkt (visningsläge). */
+  fillBots(): void {
+    while (this.botPool.length) {
+      const b = this.botPool.shift()!;
+      this.players.push(this.makePlayer(b.name, b.skinId, { isBot: true, profile: b.profile as BotProfile }));
+    }
+    this.bump();
+  }
+
   /* ---------- Anslutning ---------- */
 
   peek(): Peek {

@@ -31,7 +31,7 @@ function fmtTime(ms: number) {
   return `${Math.floor(sec / 60)}:${String(sec % 60).padStart(2, "0")}`;
 }
 
-export default function HostGame({ code }: { code: string }) {
+export default function HostGame({ code, keyboard = true }: { code: string; keyboard?: boolean }) {
   const router = useRouter();
   const transport = useMemo(() => getTransport(), []);
   const addSession = useStore((x) => x.addSession);
@@ -91,8 +91,10 @@ export default function HostGame({ code }: { code: string }) {
   // Tangentbord: mellanslag/pil höger = nästa, P = paus
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
+      if (!keyboard) return;
       if ((e.target as HTMLElement)?.tagName === "BUTTON" && (e.key === " " || e.key === "Enter")) return;
-      if (e.key === " " || e.key === "ArrowRight") {
+      // Lägen i egen takt avslutas bara med knappen – inte av misstag med en tangent
+      if ((e.key === " " || e.key === "ArrowRight") && view?.phase !== "playing") {
         e.preventDefault();
         next();
       }
@@ -100,7 +102,7 @@ export default function HostGame({ code }: { code: string }) {
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [next, send, view]);
+  }, [next, send, view, keyboard]);
 
   if (error) {
     return (

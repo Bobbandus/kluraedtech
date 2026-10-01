@@ -30,6 +30,7 @@ type Pop = { id: number; text: string; kind: "star" | "near" | "miss" };
 export default function ChaseGame({ view, act, clockOffset }: { view: PlayerView; act: (a: PlayerAction) => Promise<ActResult>; clockOffset: number }) {
   const reduced = useStore((x) => x.prefs.reducedMotion);
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const shellRef = useRef<HTMLDivElement>(null);
   const miniRef = useRef<HTMLCanvasElement>(null);
   const game = useRef<ChaseState | null>(null);
   if (!game.current) game.current = createChase(Math.floor(Math.random() * 1e9), view.settings.energy, seedFromCode(view.code));
@@ -54,9 +55,11 @@ export default function ChaseGame({ view, act, clockOffset }: { view: PlayerView
     const canvas = canvasRef.current!;
     const g = game.current!;
     const r = new ChaseRenderer(canvas);
-    const fit = () => r.resize(window.innerWidth, window.innerHeight);
+    const shell = shellRef.current!;
+    const fit = () => r.resize(shell.clientWidth || window.innerWidth, shell.clientHeight || window.innerHeight);
     fit();
-    window.addEventListener("resize", fit);
+    const ro = new ResizeObserver(fit);
+    ro.observe(shell);
     r.warm(g.city, g.player.x, g.player.y);
     r.snapCamera(g);
 
@@ -103,7 +106,7 @@ export default function ChaseGame({ view, act, clockOffset }: { view: PlayerView
     const hideHint = setTimeout(() => setHint(false), 6000);
     return () => {
       cancelAnimationFrame(raf);
-      window.removeEventListener("resize", fit);
+      ro.disconnect();
       clearTimeout(hideHint);
     };
   }, [pop]);
@@ -149,7 +152,8 @@ export default function ChaseGame({ view, act, clockOffset }: { view: PlayerView
     let l = false;
     let r = false;
     for (const x of pointers.current.values()) {
-      if (x < window.innerWidth / 2) l = true;
+      const rect = shellRef.current?.getBoundingClientRect();
+      if (x < (rect ? rect.left + rect.width / 2 : window.innerWidth / 2)) l = true;
       else r = true;
     }
     g.input.steer = l && r ? 0 : r ? 1 : l ? -1 : 0;
@@ -186,7 +190,7 @@ export default function ChaseGame({ view, act, clockOffset }: { view: PlayerView
   const heat = g.phase === "question" ? 1 : g.heat;
 
   return (
-    <div className={`${s.shell} ${asking ? s.asking : ""}`}>
+    <div ref={shellRef} className={`${s.shell} ${asking ? s.asking : ""}`}>
       <canvas
         ref={canvasRef}
         className={s.canvas}

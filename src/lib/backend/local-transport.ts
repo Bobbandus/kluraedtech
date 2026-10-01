@@ -1,7 +1,7 @@
 "use client";
 
 import { Room } from "@/lib/rooms/room";
-import type { RoomQuiz, RoomSettings } from "@/lib/rooms/types";
+import type { GameMode, RoomQuiz, RoomSettings } from "@/lib/rooms/types";
 import { ALL_QUIZZES } from "@/data/quizzes";
 import type { GameTransport } from "./transport";
 
@@ -103,3 +103,24 @@ export const localTransport: GameTransport = {
     return room.act(tok, action, Date.now());
   },
 };
+
+/**
+ * Visningsläge (/admin): ett rum med hela klassen på plats direkt.
+ * autoHost = rummet styr tempot själv (ingen lärare behövs).
+ */
+export function showcaseRoom(mode: GameMode, quizId: string, opts: { autoHost: boolean; minutes?: number }): { code: string; hostKey: string } {
+  let code = newCode();
+  while (rooms.has(code)) code = newCode();
+  const room = new Room(code, toRoomQuiz(quizId), { mode, energy: "standard", longerTime: false, randomNames: false, minutes: opts.minutes ?? 5, className: "9A" }, Date.now(), {
+    bots: 24,
+    autoHost: opts.autoHost,
+  });
+  room.fillBots();
+  rooms.set(code, room);
+  return { code, hostKey: room.hostKey };
+}
+
+export function startShowcase(code: string) {
+  const room = rooms.get(code);
+  if (room && room.phase === "lobby") room.host({ type: "start" }, Date.now());
+}
