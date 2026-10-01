@@ -149,4 +149,12 @@
     top: 0;
     position: static;
   }
+  .topInner > div {
+    margin-left: 0 !important;
+    width: 100%;
+    flex-wrap: wrap;
+  }
+  .qcard {
+    padding: 14px 12px;
+  }
 }

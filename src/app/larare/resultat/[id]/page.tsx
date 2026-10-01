@@ -25,6 +25,7 @@ export default function ResultDetail() {
   const [sort, setSort] = useState<Sort>("rank");
   const [openQ, setOpenQ] = useState<number | null>(null);
   const [showAll, setShowAll] = useState(false);
+  const [showSupport, setShowSupport] = useState(false);
   const r = sessions.find((x) => x.id === id);
 
   const players = useMemo(() => {
@@ -183,7 +184,14 @@ export default function ResultDetail() {
           </div>
           {support.length > 0 && (
             <div style={{ marginTop: 18, padding: 14, borderRadius: 16, background: "var(--fjall-tint)", fontSize: "0.92rem" }}>
-              <strong style={{ color: "var(--fjall-dark)" }}>Kan behöva extra stöd:</strong> {support.map((p) => p.name).join(", ")} hade under hälften rätt. Visas bara för dig.
+              <button onClick={() => setShowSupport((x) => !x)} aria-expanded={showSupport} className="row gap-8" style={{ background: "none", border: 0, padding: 0, fontWeight: 700, color: "var(--fjall-dark)" }}>
+                <Icon name={showSupport ? "eyeOff" : "eye"} size={16} /> {support.length} {support.length === 1 ? "elev" : "elever"} kan behöva extra stöd
+              </button>
+              {showSupport ? (
+                <p style={{ marginTop: 6 }}>{support.map((p) => p.name).join(", ")} hade under hälften rätt.</p>
+              ) : (
+                <p className="muted" style={{ marginTop: 4 }}>Dolt så att det inte syns om skärmen delas.</p>
+              )}
             </div>
           )}
         </section>

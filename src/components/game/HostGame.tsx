@@ -458,7 +458,7 @@ function Host({ session, classId }: { session: LiveSession; classId: string }) {
   const podium = order.slice(0, Math.min(3, cfg.podium));
   const acc = players.current.reduce((a, p) => a + p.correct, 0) / (total * n);
   const streakKing = players.current.slice().sort((a, b) => b.bestStreak - a.bestStreak)[0];
-  const heights = [140, 190, 110];
+  const heights = [190, 140, 110];
   const placeOrder = [1, 0, 2].filter((i) => i < podium.length);
   return (
     <div className={s.shell}>

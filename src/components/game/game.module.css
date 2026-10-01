@@ -540,6 +540,18 @@
   .fbTitle {
     font-size: 1.2rem;
   }
+  .fbInner {
+    gap: 10px;
+  }
+  .fbIcon {
+    width: 40px;
+    height: 40px;
+  }
+  .feedback {
+    padding-top: 14px;
+    max-height: 62dvh;
+    overflow-y: auto;
+  }
   .fbNext {
     width: 100%;
   }

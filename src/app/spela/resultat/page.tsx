@@ -41,7 +41,6 @@ export default function StudentResult() {
   const acc = Math.round((m.correct / m.questions) * 100);
   const total = m.earned.reduce((a, b) => a + b.amount, 0);
   const lvl = levelFromXp(st.xp);
-  const top = m.rank <= 3;
 
   return (
     <>
@@ -56,7 +55,7 @@ export default function StudentResult() {
           </p>
           <h1 style={{ marginTop: 6 }}>{m.reachedSummit ? "Du nådde toppen!" : acc >= 70 ? "Starkt klättrat!" : m.personalBest ? "Nytt personbästa!" : "Bra kämpat!"}</h1>
           <p className="muted" style={{ marginTop: 6 }}>
-            {top ? `Plats ${m.rank} av ${m.total}` : `Plats ${m.rank} av ${m.total} · ${m.score.toLocaleString("sv-SE")} m`}
+            {m.rank <= m.total / 2 ? `Plats ${m.rank} av ${m.total} · ${m.score.toLocaleString("sv-SE")} m` : `Du klättrade ${m.score.toLocaleString("sv-SE")} m`}
           </p>
 
           <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 10, marginTop: 22 }}>

@@ -236,9 +236,16 @@
     display: none !important;
   }
 }
+.hero > * {
+  min-width: 0;
+}
 @media (max-width: 480px) {
   .join {
     flex-direction: column;
+  }
+  .codeInput {
+    width: 100%;
+    flex: none;
   }
   .artCard {
     display: none;
