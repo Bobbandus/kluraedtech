@@ -754,10 +754,122 @@ export interface PersonLook {
   police?: boolean;
 }
 
-/**
- * Person ovanifrån i samma tecknade stil som bilarna: skugga, ben som går,
- * axlar med ljus från vänster, armar som pendlar och huvud med frisyr.
- */
+/* ---------- Pixelfigurer ---------- */
+
+const PX = 2; // världsenheter per pixel
+const GRID = 18;
+const OUTLINE = "#1b1f22";
+const pixelCache = new Map<string, { img: HTMLCanvasElement; shadow: HTMLCanvasElement }>();
+
+/** Ritar en figur pixel för pixel (vänd åt +x) och lägger till svart kontur. */
+function buildPixelPerson(look: PersonLook, swing: number, aiming: boolean, down: boolean) {
+  const c = document.createElement("canvas");
+  c.width = GRID;
+  c.height = GRID;
+  const g = c.getContext("2d")!;
+  const px = (x: number, y: number, w: number, h: number, col: string) => {
+    g.fillStyle = col;
+    g.fillRect(Math.round(x), Math.round(y), w, h);
+  };
+  const disc = (cx: number, cy: number, rx: number, ry: number, col: string, where: (x: number, y: number) => boolean = () => true) => {
+    g.fillStyle = col;
+    for (let y = 0; y < GRID; y++)
+      for (let x = 0; x < GRID; x++) {
+        const dx = (x + 0.5 - cx) / rx;
+        const dy = (y + 0.5 - cy) / ry;
+        if (dx * dx + dy * dy <= 1 && where(x, y)) g.fillRect(x, y, 1, 1);
+      }
+  };
+  const skin = look.skin ?? "#f1c7a1";
+  const top = look.police ? "#25427a" : look.top;
+  const topDark = shade(top, -0.25);
+  const topLight = shade(top, 0.25);
+  const shoes = "#26292c";
+  if (down) {
+    // Liggande på rygg: ben, kropp och huvud i rad
+    px(2, 6, 4, 2, look.police ? "#1d2c4a" : "#3a4652");
+    px(2, 10, 4, 2, look.police ? "#1d2c4a" : "#3a4652");
+    px(1, 6, 1, 2, shoes);
+    px(1, 10, 1, 2, shoes);
+    disc(9, 9, 4, 4.5, top);
+    if (look.police) disc(9, 9, 2.6, 3.4, "#e6ee3c");
+    px(7, 3, 3, 2, topDark);
+    px(7, 13, 3, 2, topDark);
+    px(10, 3, 1, 2, skin);
+    px(10, 13, 1, 2, skin);
+    disc(14, 9, 2.6, 2.6, skin);
+    if (look.police) disc(14, 9, 2.8, 2.8, "#14254a", (x) => x < 14);
+    else disc(14, 9, 2.6, 2.6, look.hair ?? "#4a2f1d", (x) => x < 14);
+  } else {
+    // Fötter (sticker fram och bak när figuren går)
+    px(7 + 3 * swing, 5, 3, 2, shoes);
+    px(7 - 3 * swing, 11, 3, 2, shoes);
+    // Armar längs sidorna, pendlar mot benen
+    if (aiming) {
+      px(5, 3, 4, 2, topDark);
+      px(9, 3, 1, 2, skin);
+      px(8, 11, 6, 2, topDark);
+      px(14, 11, 1, 2, skin);
+      px(15, 11, 2, 1, "#111316");
+    } else {
+      px(4 - 2 * swing, 3, 4, 2, topDark);
+      px(8 - 2 * swing, 3, 1, 2, skin);
+      px(4 + 2 * swing, 13, 4, 2, topDark);
+      px(8 + 2 * swing, 13, 1, 2, skin);
+    }
+    // Överkropp med ljus uppifrån vänster
+    disc(8, 9, 3.8, 6, top);
+    disc(8, 9, 3.8, 6, topDark, (_x, y) => y >= 12);
+    disc(8, 9, 3.8, 6, topLight, (x, y) => y <= 5 && x <= 8);
+    if (look.police) {
+      // Reflexväst med silverband
+      disc(8, 9, 2.8, 4.8, "#e6ee3c");
+      px(6, 5, 1, 8, "#c9d0d4");
+    }
+    // Huvud mitt på axlarna, lite framåt
+    disc(9, 9, 2.9, 2.9, skin);
+    if (look.police) {
+      disc(8.8, 9, 3.1, 3.1, "#14254a");
+      px(11, 8, 2, 2, "#0b1730");
+      px(9, 8, 1, 1, "#f2c230");
+    } else {
+      const hair = look.hair ?? "#4a2f1d";
+      disc(9, 9, 2.9, 2.9, hair, (x) => x <= 9);
+      px(7, 7, 1, 1, shade(hair, 0.35));
+    }
+  }
+  // Kontur: varje tom pixel som rör en fylld blir mörk
+  const img = g.getImageData(0, 0, GRID, GRID);
+  const d = img.data;
+  const filled = (x: number, y: number) => x >= 0 && y >= 0 && x < GRID && y < GRID && d[(y * GRID + x) * 4 + 3] > 0;
+  const edge: number[] = [];
+  for (let y = 0; y < GRID; y++)
+    for (let x = 0; x < GRID; x++) if (!filled(x, y) && (filled(x - 1, y) || filled(x + 1, y) || filled(x, y - 1) || filled(x, y + 1))) edge.push(x, y);
+  g.fillStyle = OUTLINE;
+  for (let i = 0; i < edge.length; i += 2) g.fillRect(edge[i], edge[i + 1], 1, 1);
+  // Skugga = siluetten i halvgenomskinligt mörkt
+  const sh = document.createElement("canvas");
+  sh.width = GRID;
+  sh.height = GRID;
+  const sg = sh.getContext("2d")!;
+  sg.drawImage(c, 0, 0);
+  sg.globalCompositeOperation = "source-in";
+  sg.fillStyle = "rgba(10,18,20,0.32)";
+  sg.fillRect(0, 0, GRID, GRID);
+  return { img: c, shadow: sh };
+}
+
+function pixelPerson(look: PersonLook, swing: number, aiming: boolean, down: boolean) {
+  const key = `${look.top}|${look.hair}|${look.police ? 1 : 0}|${swing}|${aiming ? 1 : 0}|${down ? 1 : 0}`;
+  let hit = pixelCache.get(key);
+  if (!hit) {
+    hit = buildPixelPerson(look, swing, aiming, down);
+    pixelCache.set(key, hit);
+  }
+  return hit;
+}
+
+/** Pixelfigur ovanifrån: tre gångbilder, siktande polis och omkullkörd. */
 export function drawPerson(ctx: Ctx, x: number, y: number, a: number, look: PersonLook, time: number, walking: boolean, alpha = 1, opts: { down?: boolean; ring?: boolean; aiming?: boolean } = {}) {
   ctx.save();
   ctx.globalAlpha = alpha;
@@ -768,132 +880,28 @@ export function drawPerson(ctx: Ctx, x: number, y: number, a: number, look: Pers
     ctx.arc(x, y, 24 + Math.sin(time * 5) * 1.5, 0, Math.PI * 2);
     ctx.stroke();
   }
-  // Skugga
-  ctx.fillStyle = "rgba(10,18,20,0.28)";
-  ctx.beginPath();
-  ctx.ellipse(x + 4, y + 5, 15, 11, 0, 0, Math.PI * 2);
-  ctx.fill();
+  // Fyra gångbilder: mitten, vänster fram, mitten, höger fram
+  const frame = walking && !opts.down ? [0, 1, 0, -1][Math.floor(time * 9) % 4] : 0;
+  const sp = pixelPerson(look, frame, !!opts.aiming, !!opts.down);
+  const size = GRID * PX;
+  const smooth = ctx.imageSmoothingEnabled;
+  ctx.imageSmoothingEnabled = false;
+  ctx.save();
+  ctx.translate(x + 3, y + 4);
+  ctx.rotate(a);
+  ctx.drawImage(sp.shadow, -size / 2, -size / 2, size, size);
+  ctx.restore();
   ctx.translate(x, y);
-  ctx.rotate(a + (opts.down ? Math.PI / 2 : 0));
-  const S = 1.45;
-  ctx.scale(S, S);
-  const skin = look.skin ?? "#f1c7a1";
-  const swing = walking && !opts.down ? Math.sin(time * 11) * 4.2 : 0;
+  ctx.rotate(a);
+  ctx.drawImage(sp.img, -size / 2, -size / 2, size, size);
+  ctx.imageSmoothingEnabled = smooth;
   if (opts.down) {
-    // Liggande: hela kroppen syns, ben utsträckta
-    ctx.fillStyle = "#2c3238";
-    ctx.beginPath();
-    ctx.roundRect(-14, -5.5, 10, 4.5, 2);
-    ctx.roundRect(-14, 1, 10, 4.5, 2);
-    ctx.fill();
-  }
-  // Ben och skor
-  ctx.fillStyle = look.police ? "#1d2c4a" : "#33404a";
-  ctx.beginPath();
-  ctx.roundRect(-3 + swing, -5.4, 6.5, 3.8, 1.9);
-  ctx.roundRect(-3 - swing, 1.6, 6.5, 3.8, 1.9);
-  ctx.fill();
-  ctx.fillStyle = "#16191b";
-  ctx.beginPath();
-  ctx.ellipse(3.6 + swing, -3.5, 2.2, 1.9, 0, 0, Math.PI * 2);
-  ctx.ellipse(3.6 - swing, 3.5, 2.2, 1.9, 0, 0, Math.PI * 2);
-  ctx.fill();
-  // Armar längs sidorna – pendlar i otakt med benen. Höger arm sträcks fram när polisen siktar.
-  const top = look.police ? "#1f3a6e" : look.top;
-  for (const [sy, sw] of [
-    [-1, -swing],
-    [1, swing],
-  ] as [number, number][]) {
-    const aim = opts.aiming && sy > 0;
-    const x0 = aim ? -1 : -4 + sw * 0.8;
-    const len = aim ? 13 : 7.5;
-    const yy = aim ? sy * 5.5 : sy * 8.6;
-    ctx.fillStyle = shade(top, -0.08);
-    ctx.strokeStyle = "rgba(16,20,22,0.85)";
-    ctx.lineWidth = 1;
-    ctx.beginPath();
-    ctx.roundRect(x0, yy - 2.3, len, 4.6, 2.3);
-    ctx.fill();
-    ctx.stroke();
-    ctx.fillStyle = skin;
-    ctx.beginPath();
-    ctx.arc(x0 + len, yy, 2.1, 0, Math.PI * 2);
-    ctx.fill();
-    if (aim) {
-      ctx.fillStyle = "#1b1e21";
-      ctx.fillRect(x0 + len, yy - 1.2, 5, 2.4);
-    }
-  }
-  // Överkropp
-  const g = ctx.createLinearGradient(0, -8, 0, 8);
-  g.addColorStop(0, shade(top, 0.25));
-  g.addColorStop(1, shade(top, -0.18));
-  ctx.fillStyle = g;
-  ctx.strokeStyle = "rgba(16,20,22,0.9)";
-  ctx.lineWidth = 1.2;
-  ctx.beginPath();
-  ctx.ellipse(-0.5, 0, 5.5, 9.2, 0, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.stroke();
-  if (look.police) {
-    // Reflexväst med band
-    ctx.fillStyle = "#e3ec3f";
-    ctx.beginPath();
-    ctx.ellipse(-0.8, 0, 4.4, 8, 0, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.fillStyle = "#cfd5d9";
-    ctx.fillRect(-3.4, -7.4, 1.4, 14.8);
-    ctx.fillStyle = "#1f3a6e";
-    ctx.font = "900 3.2px system-ui, sans-serif";
-    ctx.save();
-    ctx.rotate(Math.PI / 2);
-    ctx.textAlign = "center";
-    ctx.fillText("POLIS", 0, 2.4);
-    ctx.restore();
-  }
-  // Huvud
-  ctx.fillStyle = skin;
-  ctx.strokeStyle = "rgba(16,20,22,0.85)";
-  ctx.lineWidth = 1;
-  ctx.beginPath();
-  ctx.arc(0.5, 0, 4.4, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.stroke();
-  if (look.police) {
-    // Skärmmössa
-    ctx.fillStyle = "#14254a";
-    ctx.beginPath();
-    ctx.arc(0, 0, 4.6, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.fillStyle = "#0e1a35";
-    ctx.beginPath();
-    ctx.ellipse(4.2, 0, 2.2, 3.8, 0, -Math.PI / 2, Math.PI / 2);
-    ctx.fill();
-    ctx.fillStyle = "#f2c230";
-    ctx.beginPath();
-    ctx.arc(1.8, 0, 1.1, 0, Math.PI * 2);
-    ctx.fill();
-  } else {
-    // Hår (bakhuvud) med glans
-    ctx.fillStyle = look.hair ?? "#5a3a24";
-    ctx.beginPath();
-    ctx.arc(-0.4, 0, 4.4, Math.PI * 0.5, Math.PI * 1.5);
-    ctx.quadraticCurveTo(2.5, -4.6, 2.2, 0);
-    ctx.quadraticCurveTo(2.5, 4.6, -0.4, 4.4);
-    ctx.fill();
-    ctx.fillStyle = "rgba(255,255,255,0.25)";
-    ctx.beginPath();
-    ctx.ellipse(-1.6, -1.6, 1.4, 0.8, -0.5, 0, Math.PI * 2);
-    ctx.fill();
-  }
-  if (opts.down) {
-    // Snurrande stjärnor
+    // Snurrande pixelstjärnor
+    ctx.rotate(-a);
     for (let i = 0; i < 3; i++) {
       const t = time * 4 + (i * Math.PI * 2) / 3;
       ctx.fillStyle = "#ffd65a";
-      ctx.beginPath();
-      ctx.arc(Math.cos(t) * 8, Math.sin(t) * 8, 1.4, 0, Math.PI * 2);
-      ctx.fill();
+      ctx.fillRect(Math.round(Math.cos(t) * 12) - 2, Math.round(Math.sin(t) * 6) - 16, 4, 4);
     }
   }
   ctx.restore();
