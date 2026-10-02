@@ -50,7 +50,7 @@
   position: absolute;
   top: 18px;
   right: 18px;
-  width: min(290px, 28vw);
+  width: min(330px, 30vw);
   padding: 12px 10px 10px;
   border-radius: 16px;
   background: rgba(16, 22, 24, 0.78);
@@ -86,9 +86,31 @@
 .podium {
   background: rgba(255, 214, 90, 0.14);
 }
-.podium .rank {
-  background: #ffd65a;
-  color: #1d2326;
+.gold {
+  background: linear-gradient(180deg, #ffe07a, #f2b705) !important;
+  color: #3a2a00;
+}
+.silver {
+  background: linear-gradient(180deg, #f1f4f6, #b9c3ca) !important;
+  color: #2a3238;
+}
+.bronze {
+  background: linear-gradient(180deg, #f2c29b, #c47a45) !important;
+  color: #fff;
+}
+.mult {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 0.9rem;
+  color: #ffd65a;
+}
+.points {
+  min-width: 64px;
+  text-align: right;
+  font-family: var(--font-display);
+  font-weight: 900;
+  font-size: 1.2rem;
+  font-variant-numeric: tabular-nums;
 }
 .rank {
   flex: none;

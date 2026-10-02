@@ -14,12 +14,13 @@ import { LogoMark } from "@/components/brand";
 import { OPT_COLORS, OPT_KEYS } from "./parts";
 import ClimbScene from "./climb/ClimbScene";
 import ChaseProjector from "./chase/ChaseProjector";
+import LegBoard from "./LegBoard";
 import { MODE_INFO } from "@/lib/modes";
 import { QuestionImage } from "@/components/QuestionImage";
 import s from "./host.module.css";
 
 const LOBBY_RULES: Record<HostView["mode"], string> = {
-  jakt: "Kör undan polisen. När mätaren är full kommer en fråga – rätt svar ger en stjärna. Flest stjärnor vinner.",
+  jakt: "Kör undan polisen och samla poäng. Rätt svar ger en stjärna – och varje stjärna höjer poängmultiplikatorn. Byt bil som spöke för att skaka av dig polisen.",
   fjall: "Försvara stugan mot trollen. Rätt svar ger virke till nya torn. Trollen väntar inte medan du funderar.",
   topptur: "Alla svarar på samma fråga. Rätt svar tar dig uppåt mot toppen – fart ger bara lite extra.",
 };
@@ -49,6 +50,16 @@ export default function HostGame({ code, keyboard = true }: { code: string; keyb
   const [host, setHost] = useState("");
   const keyRef = useRef<string | null>(null);
   const saved = useRef(false);
+  // Placeringar när förra etappen visades – för upp/ner-pilarna i topplistan
+  const prevRanks = useRef(new Map<string, { rank: number; score: number }>());
+  const lastPhase = useRef<string | null>(null);
+  useEffect(() => {
+    if (!view) return;
+    if (lastPhase.current === "leg" && view.phase !== "leg") {
+      prevRanks.current = new Map(ranked(view.players).map((p, i) => [p.id, { rank: i, score: p.score }]));
+    }
+    lastPhase.current = view.phase;
+  }, [view]);
 
   useEffect(() => {
     setHost(window.location.host);
@@ -378,25 +389,23 @@ export default function HostGame({ code, keyboard = true }: { code: string; keyb
     return (
       <div className={s.shell}>
         {top}
-        <main id="innehall" className={s.main}>
-          <h1 style={{ color: "#fff", fontSize: "clamp(2rem,4vw,3rem)" }}>{LEG_NAMES[legIndex]} avklarad</h1>
-          <ClimbScene field={view.players.map((p) => ({ skinId: p.skinId, score: p.score }))} maxScore={maxScore} score={0} height={260} legs={view.legSizes.length > 1 ? [...LEG_NAMES] : []} />
-          {!lugn && (
-            <div className={s.panel}>
-              <div className={s.board}>
-                {order.slice(0, 5).map((p, i) => (
-                  <div key={p.id} className={s.brow} style={{ animationDelay: `${i * 0.07}s` }}>
-                    <span className="num" style={{ width: 28, color: "var(--ink-3)" }}>
-                      {i + 1}
-                    </span>
-                    <Avatar skin={p.skinId} size={40} />
-                    <span className="grow">{p.name}</span>
-                    <span className="num">{p.score.toLocaleString("sv-SE")} m</span>
-                  </div>
-                ))}
-              </div>
+        <main id="innehall" className={`${s.main} ${s.legMain}`}>
+          <h1 className={s.legTitle}>{LEG_NAMES[legIndex]} avklarad</h1>
+          <div className={`${s.legGrid} ${lugn ? s.legGridSolo : ""}`}>
+            <div className={s.legScene}>
+              <ClimbScene
+                field={view.players.map((p) => {
+                  const rank = order.findIndex((o) => o.id === p.id) + 1;
+                  return { skinId: p.skinId, score: p.score, name: !lugn && rank <= 5 ? p.name : undefined, rank };
+                })}
+                maxScore={maxScore}
+                score={0}
+                height={360}
+                legs={view.legSizes.length > 1 ? [...LEG_NAMES] : []}
+              />
             </div>
-          )}
+            {!lugn && <LegBoard key={`leg-${legIndex}`} rows={order} prev={prevRanks.current} />}
+          </div>
         </main>
         {controls}
       </div>
@@ -423,7 +432,7 @@ export default function HostGame({ code, keyboard = true }: { code: string; keyb
               <div key={p.id} className={s.step} style={{ animationDelay: `${[0.5, 1.1, 0][i]}s` }}>
                 <Avatar skin={p.skinId} size={i === 0 ? 96 : 72} style={{ margin: "0 auto" }} className={i === 0 ? "anim-bob" : undefined} />
                 <div style={{ fontWeight: 800, fontSize: "1.3rem", marginTop: 6 }}>{p.name}</div>
-                <div style={{ color: "#c9e6d9" }}>{view.mode === "jakt" ? `★ ${p.stars ?? p.score} ${(p.stars ?? p.score) === 1 ? "stjärna" : "stjärnor"}` : fj ? `Våg ${p.wave ?? 0} · ${p.score.toLocaleString("sv-SE")}` : `${p.score.toLocaleString("sv-SE")} m`}</div>
+                <div style={{ color: "#c9e6d9" }}>{view.mode === "jakt" ? `${p.score.toLocaleString("sv-SE")} poäng · ★ ${p.stars ?? 0}` : fj ? `Våg ${p.wave ?? 0} · ${p.score.toLocaleString("sv-SE")}` : `${p.score.toLocaleString("sv-SE")} m`}</div>
                 <div className={s.block} style={{ height: heights[i], background: i === 0 ? "var(--sol)" : undefined, color: i === 0 ? "var(--ink)" : undefined }}>
                   {i + 1}
                 </div>

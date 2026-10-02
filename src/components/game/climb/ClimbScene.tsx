@@ -30,7 +30,8 @@ export interface ClimbProps {
   skin?: string;
   score: number;
   maxScore: number;
-  field?: { skinId: string; score: number }[];
+  /** name/rank visas som etikett ovanför figuren (projektorn) */
+  field?: { skinId: string; score: number; name?: string; rank?: number }[];
   height?: number;
   /** Etiketter för etapper längs stigen */
   legs?: string[];
@@ -99,7 +100,7 @@ export default function ClimbScene({ skin, score, maxScore, field = [], height =
       const dt = Math.min(0.1, (now - last) / 1000);
       last = now;
       t += dt;
-      const pr = props.current as unknown as { skin?: string; field: { skinId: string; f: number }[]; legs: string[]; showGhosts: boolean; reduced: boolean };
+      const pr = props.current as unknown as { skin?: string; field: { skinId: string; f: number; name?: string; rank?: number }[]; legs: string[]; showGhosts: boolean; reduced: boolean };
       const moving = Math.abs(target.current - shown) > 0.002;
       shown += (target.current - shown) * Math.min(1, dt * (pr.reduced ? 20 : 2.2));
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
@@ -255,6 +256,35 @@ export default function ClimbScene({ skin, score, maxScore, field = [], height =
           ctx.globalAlpha = pr.skin ? 0.32 : 0.95;
           if (img) ctx.drawImage(img, p.x - size * 0.35, p.y - size * 0.72, size * 0.7, size * 0.7);
           ctx.globalAlpha = 1;
+        }
+        // Namnskyltar (projektorn), de bästa sist så att de hamnar överst
+        const labeled = pr.field.filter((g) => g.name).sort((a, b) => (b.rank ?? 99) - (a.rank ?? 99));
+        const fs = Math.max(11, Math.min(15, H * 0.05));
+        ctx.font = `800 ${fs}px Nunito, system-ui, sans-serif`;
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        for (const g of labeled) {
+          const p = P(g.f);
+          const medal = g.rank === 1 ? "#ffcf3f" : g.rank === 2 ? "#cfd6dc" : g.rank === 3 ? "#e0a070" : null;
+          const label = g.name!;
+          const w = ctx.measureText(label).width + (medal ? 30 : 14);
+          const y = p.y - size * 0.72 - fs * 0.9;
+          ctx.fillStyle = "rgba(255,255,255,0.95)";
+          ctx.beginPath();
+          ctx.roundRect(p.x - w / 2, y - fs * 0.75, w, fs * 1.5, fs * 0.75);
+          ctx.fill();
+          if (medal) {
+            ctx.fillStyle = medal;
+            ctx.beginPath();
+            ctx.arc(p.x - w / 2 + fs * 0.85, y, fs * 0.55, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.fillStyle = "#1d2326";
+            ctx.font = `900 ${fs * 0.75}px Nunito, system-ui, sans-serif`;
+            ctx.fillText(String(g.rank), p.x - w / 2 + fs * 0.85, y + 0.5);
+            ctx.font = `800 ${fs}px Nunito, system-ui, sans-serif`;
+          }
+          ctx.fillStyle = "#1d2326";
+          ctx.fillText(label, p.x + (medal ? fs * 0.55 : 0), y + 0.5);
         }
       }
 

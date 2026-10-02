@@ -36,7 +36,7 @@ import {
   step as stepDefense,
   type DefenseState,
 } from "@/lib/game/defense";
-import { CELL, createCity, seedFromCode, type City } from "@/lib/game/chase";
+import { CELL, POINTS, createCity, multiplier, seedFromCode, type City } from "@/lib/game/chase";
 import { checkName } from "@/lib/moderation";
 import { makeClassmates, randomNickname } from "@/data/people";
 import type { SessionResult } from "@/lib/results";
@@ -197,7 +197,7 @@ export class Room {
 
   private scoreOf(p: RoomPlayer) {
     const m = this.settings.mode;
-    return m === "fjall" ? this.fjallScore(p) : m === "jakt" ? this.starsOf(p) : p.score;
+    return m === "fjall" ? this.fjallScore(p) : m === "jakt" ? Math.floor(p.report.score) : p.score;
   }
 
   private get selfPaced() {
@@ -457,10 +457,14 @@ export class Room {
         if (!s || typeof s !== "object") return { ok: false, error: "Ogiltig rapport." };
         if (this.settings.mode === "jakt") {
           const clamp01 = (v: unknown) => (typeof v === "number" && Number.isFinite(v) ? Math.max(0, Math.min(1, v)) : 0.5);
+          // Rimlighetsgräns: poängen kan inte växa fortare än spelet tillåter
+          const secs = (now - (this.phaseAt || now)) / 1000;
+          const maxMult = multiplier(p.correct);
+          const cap = secs * (POINTS.perSecond + 12) * maxMult + p.correct * POINTS.correct * maxMult + 40 * POINTS.escape * maxMult;
           p.report = {
             wave: 0,
             hp: 0,
-            score: 0,
+            score: Math.max(0, Math.min(cap, Math.floor(Number(s.score) || 0))),
             downed: false,
             stars: Math.max(0, Math.min(p.correct, Math.floor(Number(s.stars) || 0))),
             busts: Math.max(0, Math.min(999, Math.floor(Number(s.busts) || 0))),
@@ -556,8 +560,11 @@ export class Room {
     r.x = (ax + (bx - ax) * w.k) / c.w;
     r.y = (ay + (by - ay) * w.k) / c.h;
     if (bx !== ax || by !== ay) r.a = Math.atan2(by - ay, bx - ax);
-    // Ibland åker boten fast (oftare med fler stjärnor)
+    // Poäng: tid × multiplikator, ibland skakar boten av sig polisen
     const stars = r.stars ?? 0;
+    r.score += POINTS.perSecond * multiplier(stars) * dt;
+    if (!r.busted && this.rng() < dt * 0.012) r.score += POINTS.escape * multiplier(stars);
+    // Ibland åker boten fast (oftare med fler stjärnor)
     if (r.busted) {
       if (this.rng() < dt / 2.6) r.busted = false;
     } else if (this.rng() < dt * (0.004 + stars * 0.0035)) {
@@ -592,7 +599,10 @@ export class Room {
             const option = a.option ?? 0;
             const correct = option === q.correct;
             this.fjallRecord(p, qi, option, correct);
-            if (correct) p.report.stars = (p.report.stars ?? 0) + 1;
+            if (correct) {
+              p.report.stars = (p.report.stars ?? 0) + 1;
+              p.report.score += POINTS.correct * multiplier(p.report.stars);
+            }
             // Mätaren fylls igen: snabbare för den som kör bra
             p.nextAnswerAt = this.lastSim + (this.botReadTime(p) + (correct ? 12 + this.rng() * 8 : 6 + this.rng() * 4)) * 1000;
           }
@@ -743,7 +753,7 @@ export class Room {
       serverNow: now,
       paused: this.paused,
       autoHost: this.autoHost,
-      you: { id: p.id, name: p.name, skinId: p.skinId, score: this.scoreOf(p), streak: p.streak, correct: p.correct, answered: p.answered, jokerUsed: p.jokerUsed },
+      you: { id: p.id, name: p.name, skinId: p.skinId, score: this.scoreOf(p), streak: p.streak, correct: p.correct, answered: p.answered, jokerUsed: p.jokerUsed, rank: this.selfPaced && this.phase === "playing" ? this.board().findIndex((r) => r.id === p.id) + 1 : undefined },
       lobby: this.players.slice(-40).map((x) => ({ id: x.id, name: x.name, skinId: x.skinId })),
       playerCount: this.players.length,
       qIndex: this.qIndex,

@@ -19,6 +19,7 @@ import ClimbScene from "./climb/ClimbScene";
 import { QuestionImage } from "@/components/QuestionImage";
 import ChaseGame from "./chase/ChaseGame";
 import { MODE_INFO } from "@/lib/modes";
+import { sfx } from "@/lib/sound";
 import DefenseGame from "./defense/DefenseGame";
 import s from "./game.module.css";
 
@@ -288,7 +289,7 @@ function Lobby({ view }: { view: PlayerView }) {
           </div>
           <p className="muted" style={{ marginTop: 10, fontSize: "0.94rem" }}>
             {view.mode === "jakt"
-              ? `Kör undan polisen i ${view.settings.minutes} minuter. När mätaren är full kommer en fråga – rätt svar ger en stjärna. Flest stjärnor vinner. Blir du fast tappar du en.`
+              ? `Kör undan polisen i ${view.settings.minutes} minuter. Rätt svar ger en stjärna – varje stjärna höjer din poängmultiplikator. Håll mellanslag för att bli spöke och byta bil, E för att kliva ur. Blir du fast tappar du en stjärna.`
               : view.mode === "fjall"
               ? `Försvara stugan mot trollen i ${view.settings.minutes} minuter. Svara rätt för att få virke, bygg torn med virket. Trollen väntar inte medan du svarar!`
               : `${view.total} frågor i ${view.legSizes.length === 3 ? "tre etapper" : "en etapp"}. Rätt svar tar dig 100 m upp, snabbhet ger bara lite extra. Du har en Joker som tar bort två fel svar.`}
@@ -335,6 +336,15 @@ function Topptur({ view, act, offset }: { view: PlayerView; act: (a: PlayerActio
       return () => clearTimeout(t);
     }
   }, [view.phase, legIndex]);
+
+  // Ljud när svaret visas
+  const soundedQ = useRef(-1);
+  useEffect(() => {
+    if (view.phase === "reveal" && view.reveal && soundedQ.current !== view.qIndex) {
+      soundedQ.current = view.qIndex;
+      sfx(view.reveal.correct ? "correct" : "wrong");
+    }
+  }, [view.phase, view.reveal, view.qIndex]);
 
   const myPick = picked?.q === view.qIndex ? picked.option : null;
   const removedNow = view.removed.length ? view.removed : removed?.q === view.qIndex ? removed.list : [];
@@ -665,7 +675,11 @@ function Finish({ view }: { view: PlayerView }) {
           {view.mode !== "topptur" ? "Tiden är ute!" : "Matchen är slut"}
         </h1>
         {view.final?.wave !== undefined && <p className="muted">Du försvarade stugan i {view.final.wave} vågor.</p>}
-        {view.final?.stars !== undefined && <p className="muted">Du samlade {view.final.stars} {view.final.stars === 1 ? "stjärna" : "stjärnor"}.</p>}
+        {view.final?.stars !== undefined && (
+          <p className="muted">
+            Du fick {view.final.score.toLocaleString("sv-SE")} poäng och slutade med ★ {view.final.stars}.
+          </p>
+        )}
       </main>
     </div>
   );

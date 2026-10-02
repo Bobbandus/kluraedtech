@@ -1,5 +1,6 @@
 "use client";
 
+import { CLASSES as CLASS_SEED, type ClassGroup } from "@/data/people";
 import { useEffect, useState } from "react";
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
@@ -74,6 +75,8 @@ interface TeacherState {
   /** Egna quiz som är publicerade i Upptäck */
   published: string[];
   sessions: SessionResult[];
+  /** Klasser som läraren skapat själv */
+  classes?: ClassGroup[];
 }
 
 interface Prefs {
@@ -94,6 +97,8 @@ interface Actions {
   deleteQuiz: (id: string) => void;
   toggleFavorite: (id: string) => void;
   setPublished: (id: string, on: boolean) => void;
+  addClass: (c: Omit<ClassGroup, "id">) => string;
+  removeClass: (id: string) => void;
   addSession: (r: SessionResult) => void;
   setPrefs: (p: Partial<Prefs>) => void;
   dismissAlphaGift: (equipIt: boolean) => void;
@@ -214,6 +219,12 @@ export const useStore = create<Store>()(
           const p = s.teacher.published ?? [];
           return { teacher: { ...s.teacher, published: on ? Array.from(new Set([...p, id])) : p.filter((x) => x !== id) } };
         }),
+      addClass: (c) => {
+        const id = `k-${Date.now().toString(36)}`;
+        set((s) => ({ teacher: { ...s.teacher, classes: [...(s.teacher.classes ?? []), { ...c, id }] } }));
+        return id;
+      },
+      removeClass: (id) => set((s) => ({ teacher: { ...s.teacher, classes: (s.teacher.classes ?? []).filter((c) => c.id !== id) } })),
       toggleFavorite: (id) =>
         set((s) => {
           const f = s.teacher.favorites;
@@ -260,4 +271,10 @@ export function useHydrated(): boolean {
     return unsub;
   }, []);
   return ok;
+}
+
+/** Alla klasser: de inbyggda plus de läraren skapat. */
+export function useClasses(): ClassGroup[] {
+  const custom = useStore((x) => x.teacher.classes);
+  return [...CLASS_SEED, ...(custom ?? [])];
 }

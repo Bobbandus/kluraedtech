@@ -58,7 +58,7 @@ export default function StudentResult() {
           </h1>
           <p className="muted" style={{ marginTop: 6 }}>
             {m.mode === "jakt"
-              ? `${m.rank <= m.total / 2 ? `Plats ${m.rank} av ${m.total} · ` : ""}${m.stars ?? 0} ${m.stars === 1 ? "stjärna" : "stjärnor"}`
+              ? `${m.rank <= m.total / 2 ? `Plats ${m.rank} av ${m.total} · ` : ""}${m.score.toLocaleString("sv-SE")} poäng · ★ ${m.stars ?? 0}`
               : m.mode === "fjall"
               ? `${m.rank <= m.total / 2 ? `Plats ${m.rank} av ${m.total} · ` : ""}${m.wave ?? 0} vågor · ${m.score.toLocaleString("sv-SE")} poäng`
               : m.rank <= m.total / 2

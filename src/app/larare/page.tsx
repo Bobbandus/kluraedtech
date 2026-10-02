@@ -6,7 +6,7 @@ import { CoverArt } from "@/components/cover";
 import { Icon } from "@/components/icons";
 import { AccuracyRing, MarketCard } from "@/components/teacher-ui";
 import { MARKET_QUIZZES } from "@/data/quizzes";
-import { useHydrated, useStore } from "@/lib/store";
+import { useHydrated, useStore, useClasses } from "@/lib/store";
 import { useSessions } from "@/lib/quizzes";
 import { classAccuracy, conceptStats, formatDate, pct } from "@/lib/results";
 import { classesFrom, recurringWeak, repetitionQuiz } from "@/lib/classes";
@@ -26,10 +26,11 @@ export default function Dashboard() {
   const sessions = useSessions();
   const router = useRouter();
   const save = useStore((x) => x.saveQuiz);
+  const allClasses = useClasses();
   if (!hydrated) return <main className="page" />;
 
   // Förslag till nästa lektion: svagaste begreppet i klassens senaste lektioner
-  const suggestions = classesFrom(sessions)
+  const suggestions = classesFrom(sessions, allClasses)
     .filter((c) => c.sessions.length)
     .map((c) => {
       const recent = c.sessions.slice(-3);

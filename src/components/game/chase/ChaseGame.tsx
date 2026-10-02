@@ -7,12 +7,21 @@ import {
   READ_LOCK,
   answer as answerChase,
   createChase,
+  CAR_HP,
+  GHOST_COOLDOWN,
+  GHOST_TIME,
+  LOSE_TIME,
   mapPos,
+  multiplier,
+  playerPos,
   resume,
   seedFromCode,
   step,
+  toggleExit,
   type ChaseState,
 } from "@/lib/game/chase";
+import { sfx, useSound } from "@/lib/sound";
+import { Icon } from "@/components/icons";
 import type { ActResult, FjallAnswerResult, PlayerAction, PlayerView, PublicQuestion } from "@/lib/rooms/types";
 import { useStore } from "@/lib/store";
 import { QuestionImage } from "@/components/QuestionImage";
@@ -25,7 +34,7 @@ function fmtTime(ms: number) {
   return `${Math.floor(sec / 60)}:${String(sec % 60).padStart(2, "0")}`;
 }
 
-type Pop = { id: number; text: string; kind: "star" | "near" | "miss" };
+type Pop = { id: number; text: string; kind: "star" | "near" | "miss" | "good" };
 
 export default function ChaseGame({ view, act, clockOffset }: { view: PlayerView; act: (a: PlayerAction) => Promise<ActResult>; clockOffset: number }) {
   const reduced = useStore((x) => x.prefs.reducedMotion);
@@ -42,6 +51,7 @@ export default function ChaseGame({ view, act, clockOffset }: { view: PlayerView
   const goAt = useRef(0);
   const countRef = useRef(3);
   const [touch, setTouch] = useState(false);
+  const [soundOn, toggleSound] = useSound();
   const ended = view.phase === "ended";
   const paused = view.paused;
   const stateRef = useRef({ ended, paused, reduced, asking });
@@ -92,12 +102,25 @@ export default function ChaseGame({ view, act, clockOffset }: { view: PlayerView
       if (left !== countRef.current) {
         countRef.current = left;
         setCount(Math.max(-1, left));
+        if (left > 0 && left <= 3) sfx("tick");
+        else if (left === 0) sfx("go");
       }
       if (!st.ended && !st.paused && left <= 0) step(g, dt);
       // Händelser till UI
       for (const e of g.events) {
         if (e.t <= lastEvent) continue;
-        if (e.kind === "nearmiss") pop("Nära ögat!", "near");
+        if (e.kind === "nearmiss") pop(`Nära ögat! +${e.power}`, "near");
+        else if (e.kind === "escape") {
+          pop(`Polisen tappade spåret! +${e.power}`, "good");
+          sfx("escape");
+        } else if (e.kind === "spotted") pop("Polisen såg dig!", "miss");
+        else if (e.kind === "wreck") pop("Bilen är sönder!", "miss");
+        else if (e.kind === "shot") sfx("shot");
+        else if (e.kind === "hit") sfx("hit");
+        else if (e.kind === "crash" && e.power > 0.3) sfx("crash");
+        else if (e.kind === "busted") sfx("busted");
+        else if (e.kind === "ghost" || e.kind === "possess") sfx("ghost");
+        else if (e.kind === "star") sfx("star");
       }
       if (g.events.length) lastEvent = g.events[g.events.length - 1].t;
       if (g.phase === "question" && !st.asking) setAsking(true);
@@ -128,11 +151,15 @@ export default function ChaseGame({ view, act, clockOffset }: { view: PlayerView
       const l = keys.has("ArrowLeft") || keys.has("a") || keys.has("A");
       const rt = keys.has("ArrowRight") || keys.has("d") || keys.has("D");
       g.input.steer = (rt ? 1 : 0) - (l ? 1 : 0);
-      g.input.brake = keys.has("ArrowDown") || keys.has("s") || keys.has("S") || keys.has(" ");
+      g.input.brake = keys.has("ArrowDown") || keys.has("s") || keys.has("S");
+      g.input.ghost = keys.has(" ") || keys.has("Shift");
     };
     const down = (e: KeyboardEvent) => {
       if ((e.target as HTMLElement)?.tagName === "INPUT") return;
       if (["ArrowLeft", "ArrowRight", "ArrowDown", "ArrowUp", " "].includes(e.key)) e.preventDefault();
+      if ((e.key === "e" || e.key === "E") && !e.repeat) {
+        if (toggleExit(game.current!)) sfx("click");
+      }
       keys.add(e.key);
       apply();
     };
@@ -189,7 +216,7 @@ export default function ChaseGame({ view, act, clockOffset }: { view: PlayerView
     const iv = setInterval(() => {
       const g = game.current!;
       const p = mapPos(g);
-      act({ type: "fjall_report", state: { wave: 0, hp: 0, score: 0, downed: false, stars: g.stars, busts: g.busts, x: p.x, y: p.y, a: g.player.a, busted: g.phase === "busted" } });
+      act({ type: "fjall_report", state: { wave: 0, hp: 0, score: Math.floor(g.score), downed: false, stars: g.stars, busts: g.busts, x: p.x, y: p.y, a: playerPos(g).a, busted: g.phase === "busted" } });
     }, 1000);
     return () => clearInterval(iv);
   }, [act]);
@@ -197,6 +224,9 @@ export default function ChaseGame({ view, act, clockOffset }: { view: PlayerView
   const g = game.current;
   const remaining = view.endsAt ? view.endsAt - (Date.now() + clockOffset) : 0;
   const heat = g.phase === "question" ? 1 : g.heat;
+  const mult = multiplier(g.stars);
+  const rank = view.you.rank;
+  const hidden = !g.lost && g.unseen > 0.6 && g.mode !== "ghost";
 
   return (
     <div ref={shellRef} className={`${s.shell} ${asking ? s.asking : ""}`}>
@@ -212,16 +242,102 @@ export default function ChaseGame({ view, act, clockOffset }: { view: PlayerView
       />
       <div className={s.vignette} aria-hidden="true" />
 
-      {/* Stjärnor med mätaren som ring */}
-      <div className={s.starHud} aria-live="polite" aria-label={`${g.stars} stjärnor`}>
-        <StarRing value={heat} bump={g.stars} />
-        <span className={s.starCount} key={g.stars}>
-          {g.stars}
-        </span>
+      {/* Poäng, med stjärnorna som multiplikator och mätaren som ring */}
+      <div className={s.starHud} aria-live="polite" aria-label={`${Math.floor(g.score)} poäng, ${g.stars} stjärnor`}>
+        <StarRing value={heat} bump={g.stars} count={g.stars} />
+        <div className={s.scoreBox}>
+          <span className={s.score}>{Math.floor(g.score).toLocaleString("sv-SE")}</span>
+          <span className={s.mult} key={g.stars}>
+            poäng · ×{mult.toLocaleString("sv-SE")}
+          </span>
+        </div>
       </div>
 
-      <div className={`${s.timer} ${remaining < 30_000 ? s.timerLow : ""}`} role="timer" aria-label="Tid kvar">
-        {fmtTime(remaining)}
+      <div className={s.topRight}>
+        {rank !== undefined && rank > 0 && (
+          <span className={`${s.rank} ${rank === 1 ? s.gold : rank === 2 ? s.silver : rank === 3 ? s.bronze : ""}`} title="Din placering">
+            {rank <= 3 ? <Icon name="trophy" size={15} /> : "#"}
+            {rank}
+          </span>
+        )}
+        <span className={`${s.timer} ${remaining < 30_000 ? s.timerLow : ""}`} role="timer" aria-label="Tid kvar">
+          {fmtTime(remaining)}
+        </span>
+        <button className={s.iconBtn} onClick={toggleSound} aria-label={soundOn ? "Stäng av ljud" : "Sätt på ljud"} aria-pressed={soundOn}>
+          <Icon name={soundOn ? "volume" : "mute"} size={18} />
+        </button>
+      </div>
+
+      {/* Status: bilens hälsa, till fots, spöke, syns du? */}
+      <div className={s.status}>
+        {g.mode === "car" && (
+          <div className={s.hpWrap} aria-label={`Bilens skick ${Math.max(0, Math.round((g.hp / CAR_HP) * 100))} %`}>
+            <span className={s.hpLabel}>Bil</span>
+            <span className={s.hpBar}>
+              <i style={{ width: `${Math.max(0, (g.hp / CAR_HP) * 100)}%`, background: g.hp > 50 ? "#2bb673" : g.hp > 25 ? "#f2b705" : "#e5484d" }} />
+            </span>
+          </div>
+        )}
+        {g.mode === "foot" && <span className={`${s.chip} ${s.chipWarn}`}>Till fots – polisen skjuter! Hitta en bil</span>}
+        {g.mode === "ghost" && (
+          <div className={s.hpWrap}>
+            <span className={s.hpLabel}>Spöke</span>
+            <span className={s.hpBar}>
+              <i style={{ width: `${(g.ghostT / GHOST_TIME) * 100}%`, background: "#a98bff" }} />
+            </span>
+          </div>
+        )}
+        {g.lost ? (
+          <span className={`${s.chip} ${s.chipGood}`}>Polisen letar efter dig</span>
+        ) : hidden ? (
+          <span className={s.chip}>
+            Utom synhåll
+            <span className={s.miniBar}>
+              <i style={{ width: `${Math.min(1, g.unseen / LOSE_TIME) * 100}%` }} />
+            </span>
+          </span>
+        ) : null}
+      </div>
+
+      {/* Knappar: spöke (håll in) och gå ut/kliv in */}
+      <div className={s.actions}>
+        <button
+          className={s.actBtn}
+          disabled={g.ghostCd > 0 || g.mode === "ghost" || g.phase !== "drive"}
+          onPointerDown={(e) => {
+            e.preventDefault();
+            game.current!.input.ghost = true;
+          }}
+          onPointerUp={() => (game.current!.input.ghost = false)}
+          onPointerLeave={() => (game.current!.input.ghost = false)}
+          onPointerCancel={() => (game.current!.input.ghost = false)}
+          aria-label="Håll in för att bli spöke och byta bil"
+          style={{ ["--cd" as string]: `${(1 - g.ghostCd / GHOST_COOLDOWN) * 360}deg` }}
+        >
+          <span className={s.actIcon}>
+            <GhostIcon />
+          </span>
+          <span className={s.actText}>
+            Spöke
+            <small>{g.ghostCd > 0 ? `${Math.ceil(g.ghostCd)} s` : touch ? "håll in" : "håll mellanslag"}</small>
+          </span>
+        </button>
+        <button
+          className={s.actBtn}
+          disabled={g.mode === "ghost" || g.phase !== "drive"}
+          onClick={() => {
+            if (toggleExit(game.current!)) sfx("click");
+          }}
+          aria-label={g.mode === "foot" ? "Kliv in i bilen" : "Kliv ur bilen"}
+        >
+          <span className={s.actIcon}>
+            <Icon name={g.mode === "foot" ? "car" : "user"} size={20} />
+          </span>
+          <span className={s.actText}>
+            {g.mode === "foot" ? "Kliv in" : "Kliv ur"}
+            <small>{touch ? "tryck" : "E"}</small>
+          </span>
+        </button>
       </div>
 
       <div className={s.mini} aria-hidden="true">
@@ -230,7 +346,7 @@ export default function ChaseGame({ view, act, clockOffset }: { view: PlayerView
 
       <div className={s.pops} aria-live="polite">
         {pops.map((p) => (
-          <span key={p.id} className={`${s.pop} ${p.kind === "star" ? s.popStar : p.kind === "miss" ? s.popMiss : ""}`}>
+          <span key={p.id} className={`${s.pop} ${p.kind === "star" ? s.popStar : p.kind === "miss" ? s.popMiss : p.kind === "good" ? s.popGood : ""}`}>
             {p.text}
           </span>
         ))}
@@ -248,7 +364,7 @@ export default function ChaseGame({ view, act, clockOffset }: { view: PlayerView
             <>Tryck på vänster eller höger sida för att svänga</>
           ) : (
             <>
-              <kbd>←</kbd> <kbd>→</kbd> styr <span className={s.sep} /> <kbd>↓</kbd> bromsa
+              <kbd>←</kbd> <kbd>→</kbd> styr <span className={s.sep} /> <kbd>↓</kbd> broms <span className={s.sep} /> <kbd>mellanslag</kbd> spöke <span className={s.sep} /> <kbd>E</kbd> kliv ur
             </>
           )}
         </div>
@@ -257,7 +373,7 @@ export default function ChaseGame({ view, act, clockOffset }: { view: PlayerView
       {g.phase === "busted" && (
         <div className={s.busted} role="alert">
           <strong>Fast!</strong>
-          <span>{g.lostStar ? "Du tappade en stjärna. Strax tillbaka …" : "Strax tillbaka …"}</span>
+          <span>{g.lostStar ? `Multiplikatorn sjönk till ×${mult.toLocaleString("sv-SE")}. Strax tillbaka …` : "Strax tillbaka …"}</span>
         </div>
       )}
 
@@ -274,7 +390,7 @@ export default function ChaseGame({ view, act, clockOffset }: { view: PlayerView
           onResult={(correct) => {
             const gg = game.current!;
             answerChase(gg, correct);
-            if (correct) pop(`★ ${gg.stars}`, "star");
+            if (correct) pop(`★ ×${multiplier(gg.stars).toLocaleString("sv-SE")}`, "star");
           }}
           onClose={() => {
             resume(game.current!);
@@ -286,7 +402,17 @@ export default function ChaseGame({ view, act, clockOffset }: { view: PlayerView
   );
 }
 
-function StarRing({ value, bump }: { value: number; bump: number }) {
+function GhostIcon() {
+  return (
+    <svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M12 3c-4.4 0-7 3.2-7 7.5V20l2.3-1.7L9.6 20 12 18.3 14.4 20l2.3-1.7L19 20v-9.5C19 6.2 16.4 3 12 3z" fill="currentColor" />
+      <circle cx="9.5" cy="10.5" r="1.4" fill="#3b2a6b" />
+      <circle cx="14.5" cy="10.5" r="1.4" fill="#3b2a6b" />
+    </svg>
+  );
+}
+
+function StarRing({ value, bump, count }: { value: number; bump: number; count: number }) {
   const R = 33;
   const C = 2 * Math.PI * R;
   return (
@@ -313,7 +439,9 @@ function StarRing({ value, bump }: { value: number; bump: number }) {
           strokeWidth="2.2"
           strokeLinejoin="round"
         />
-        <path d="M40 25.5l3.4 7 4 .6" fill="none" stroke="#fff3c0" strokeWidth="2" strokeLinecap="round" />
+        <text x="40" y="42" textAnchor="middle" dominantBaseline="middle" fontSize="13" fontWeight="900" fill="#2a2310" fontFamily="Nunito, system-ui">
+          {count}
+        </text>
       </g>
     </svg>
   );

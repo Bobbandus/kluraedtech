@@ -348,6 +348,21 @@ export function createCity(seed: number): City {
       }
     }
 
+  // Bilar parkerade längs trottoarkanten (går att byta till)
+  for (let j = 0; j < ny; j++)
+    for (let i = 0; i < nx - 1; i++) {
+      if (city.removed.has(`h:${i}:${j}`) || rng() > 0.4) continue;
+      const x0 = (roadsX[i] + ROAD) * CELL + 70;
+      const x1 = roadsX[i + 1] * CELL - 70;
+      const side = rng() < 0.5;
+      const y = roadsY[j] * CELL + (side ? 15 : ROAD * CELL - 15);
+      for (let x = x0; x < x1; x += 120 + rng() * 120) {
+        if (city.plazas.some((q) => Math.abs(q.x + q.w / 2 - x) < q.w / 2 + 40 && Math.abs(q.y + q.h / 2 - y) < q.h / 2 + 40)) continue;
+        if (city.canal && Math.abs(y - city.canal.y - city.canal.h / 2) < CELL) continue;
+        city.parked.push({ x, y, a: side ? 0 : Math.PI, model: rng() < 0.5 ? "halvkombi" : rng() < 0.5 ? "kombi" : "sport", color: pickR(rng, CAR_COLORS) });
+      }
+    }
+
   // Kanten runt staden
   addSolid(city, { t: "r", x: -200, y: -200, w: city.w + 400, h: 200 + CELL });
   addSolid(city, { t: "r", x: -200, y: city.h - CELL, w: city.w + 400, h: 200 + CELL });
@@ -504,7 +519,6 @@ function parkingRows(city: City, rng: Rng, area: Rect) {
         const p: Parked = { x: x + bay / 2, y: y + depth / 2, a: rng() < 0.5 ? Math.PI / 2 : -Math.PI / 2, model: rng() < 0.6 ? "halvkombi" : rng() < 0.6 ? "kombi" : "pickup", color: pickR(rng, CAR_COLORS) };
         if (city.plazas.some((q) => overlaps({ x: x, y, w: bay, h: depth }, q, 6))) continue;
         city.parked.push(p);
-        addSolid(city, { t: "r", x: p.x - 13, y: p.y - 26, w: 26, h: 52 });
       }
     }
   }
@@ -525,9 +539,12 @@ export interface Car {
   slip: number;
   model: CarModel;
   color: string;
-  /** Polis: tid fast mot vägg, backtid */
+  /** Polis: tid fast mot vägg, backtid, tid till nästa skott */
   stuck: number;
   reverse: number;
+  fireCd: number;
+  /** Polis: egen sökpunkt när spåret är tappat */
+  search?: { x: number; y: number; t: number };
   id: number;
 }
 
@@ -538,14 +555,24 @@ export interface CarSpec {
   grip: number;
 }
 
-export const PLAYER_SPEC: CarSpec = { accel: 400, vmax: 440, turn: 3.4, grip: 10 };
+export const PLAYER_SPEC: CarSpec = { accel: 380, vmax: 410, turn: 3.4, grip: 10 };
 
 /** Spelarens bil: lite lugnare i början, snabbare ju fler stjärnor man har. */
 export function playerSpec(s: { stars: number; energy: Energy }): CarSpec {
-  const base = s.energy === "lugn" ? 330 : s.energy === "fullfart" ? 400 : 365;
-  return { ...PLAYER_SPEC, vmax: Math.min(PLAYER_SPEC.vmax, base + s.stars * 7) };
+  const base = s.energy === "lugn" ? 305 : s.energy === "fullfart" ? 370 : 335;
+  return { ...PLAYER_SPEC, vmax: Math.min(PLAYER_SPEC.vmax, base + s.stars * 6) };
 }
 export const CAR_RADIUS = 17;
+export const FOOT_RADIUS = 8;
+export const WALK_SPEED = 150;
+export const GHOST_SPEED = 430;
+export const GHOST_TIME = 5;
+export const GHOST_HOLD = 0.6;
+export const GHOST_COOLDOWN = 16;
+export const LOSE_TIME = 6;
+export const CAR_HP = 100;
+export const BULLET_DAMAGE = 6;
+export const ENTER_RANGE = 48;
 
 export interface EnergyTuning {
   heatBase: number;
@@ -553,29 +580,53 @@ export interface EnergyTuning {
   policePerStar: number;
   policeMax: number;
   policeSpeed: number;
+  /** Från hur många stjärnor polisen skjuter mot bilen (till fots skjuter de alltid) */
+  shootFrom: number;
 }
 
 export const TUNING: Record<Energy, EnergyTuning> = {
-  lugn: { heatBase: 1 / 13, policeStart: 1, policePerStar: 0.34, policeMax: 4, policeSpeed: 0.82 },
-  standard: { heatBase: 1 / 11, policeStart: 1, policePerStar: 0.5, policeMax: 6, policeSpeed: 0.88 },
-  fullfart: { heatBase: 1 / 9, policeStart: 2, policePerStar: 0.67, policeMax: 8, policeSpeed: 0.94 },
+  lugn: { heatBase: 1 / 13, policeStart: 1, policePerStar: 0.34, policeMax: 4, policeSpeed: 0.82, shootFrom: 4 },
+  standard: { heatBase: 1 / 11, policeStart: 1, policePerStar: 0.5, policeMax: 6, policeSpeed: 0.88, shootFrom: 2 },
+  fullfart: { heatBase: 1 / 9, policeStart: 2, policePerStar: 0.67, policeMax: 8, policeSpeed: 0.94, shootFrom: 1 },
 };
 
 export function policeSpec(stars: number, t: EnergyTuning, playerVmax = PLAYER_SPEC.vmax): CarSpec {
   const k = Math.min(1.02, t.policeSpeed + stars * 0.012);
-  return { accel: 450, vmax: playerVmax * k, turn: 3.5, grip: 10 };
+  return { accel: 430, vmax: playerVmax * k, turn: 3.5, grip: 10 };
 }
+
+/** Poäng: stjärnorna är en multiplikator, inte själva poängen. */
+export const multiplier = (stars: number) => 1 + stars * 0.5;
+export const POINTS = { perSecond: 3, nearMiss: 25, correct: 100, escape: 150 };
 
 /* ---------- Tillstånd ---------- */
 
 export type ChasePhase = "drive" | "question" | "busted";
+export type BodyMode = "car" | "foot" | "ghost";
 
 export interface ChaseEvent {
   t: number;
-  kind: "crash" | "busted" | "respawn" | "star" | "miss" | "spawn" | "nearmiss" | "boost";
+  kind: "crash" | "busted" | "respawn" | "star" | "miss" | "spawn" | "nearmiss" | "boost" | "shot" | "hit" | "escape" | "ghost" | "possess" | "exit" | "enter" | "wreck" | "spotted";
   x: number;
   y: number;
   power: number;
+}
+
+export interface ParkedCar {
+  id: number;
+  x: number;
+  y: number;
+  a: number;
+  model: CarModel;
+  color: string;
+}
+
+export interface Bullet {
+  x: number;
+  y: number;
+  vx: number;
+  vy: number;
+  life: number;
 }
 
 export interface ChaseState {
@@ -584,11 +635,25 @@ export interface ChaseState {
   rng: Rng;
   energy: Energy;
   tuning: EnergyTuning;
+  /** Spelarens bil (används också som position till fots/spöke) */
   player: Car;
+  mode: BodyMode;
+  hp: number;
+  /** Till fots eller som spöke: egen position och riktning */
+  body: { x: number; y: number; a: number; vx: number; vy: number };
+  /** Bilen man lämnade (id i parked) – spöket återvänder dit om tiden tar slut */
+  homeCar: number | null;
+  ghostT: number;
+  ghostHold: number;
+  ghostCd: number;
+  parked: ParkedCar[];
+  bullets: Bullet[];
   police: Car[];
   stars: number;
   bestStars: number;
+  score: number;
   busts: number;
+  escapes: number;
   /** Tappade senaste fasttagningen en stjärna? */
   lostStar: boolean;
   heat: number;
@@ -599,7 +664,12 @@ export interface ChaseState {
   invuln: number;
   boost: number;
   nearCd: number;
-  input: { steer: number; brake: boolean };
+  /** Sekunder sedan någon polis såg dig */
+  unseen: number;
+  /** Polisen har tappat spåret */
+  lost: boolean;
+  lastKnown: { x: number; y: number };
+  input: { steer: number; brake: boolean; ghost: boolean };
   events: ChaseEvent[];
   flow: Int32Array;
   flowAt: number;
@@ -618,7 +688,7 @@ export const FEEDBACK_CORRECT = 0.9;
 export const FEEDBACK_WRONG = 4;
 
 function mkCar(id: number, x: number, y: number, a: number, model: CarModel, color: string): Car {
-  return { id, x, y, a, vx: 0, vy: 0, steer: 0, braking: false, slip: 0, model, color, stuck: 0, reverse: 0 };
+  return { id, x, y, a, vx: 0, vy: 0, steer: 0, braking: false, slip: 0, model, color, stuck: 0, reverse: 0, fireCd: 1.5 };
 }
 
 export function createChase(seed: number, energy: Energy = "standard", citySeed = seed): ChaseState {
@@ -627,6 +697,7 @@ export function createChase(seed: number, energy: Energy = "standard", citySeed 
   const central = city.spawns.filter((p) => Math.abs(p.x / city.w - 0.5) < 0.3 && Math.abs(p.y / city.h - 0.5) < 0.3);
   const pool = central.length ? central : city.spawns;
   const sp = pool[Math.floor(rng() * pool.length)];
+  let nextId = 1;
   const s: ChaseState = {
     city,
     t: 0,
@@ -634,10 +705,21 @@ export function createChase(seed: number, energy: Energy = "standard", citySeed 
     energy,
     tuning: TUNING[energy],
     player: mkCar(0, sp.x, sp.y, sp.a, "sport", "#7a3fd1"),
+    mode: "car",
+    hp: CAR_HP,
+    body: { x: sp.x, y: sp.y, a: sp.a, vx: 0, vy: 0 },
+    homeCar: null,
+    ghostT: 0,
+    ghostHold: 0,
+    ghostCd: 0,
+    parked: city.parked.map((p) => ({ ...p, id: 1000 + nextId++ })),
+    bullets: [],
     police: [],
     stars: 0,
     bestStars: 0,
+    score: 0,
     busts: 0,
+    escapes: 0,
     lostStar: false,
     heat: 0,
     phase: "drive",
@@ -646,7 +728,10 @@ export function createChase(seed: number, energy: Energy = "standard", citySeed 
     invuln: RESPAWN_INVULN,
     boost: 0,
     nearCd: 0,
-    input: { steer: 0, brake: false },
+    unseen: 0,
+    lost: false,
+    lastKnown: { x: sp.x, y: sp.y },
+    input: { steer: 0, brake: false, ghost: false },
     events: [],
     flow: new Int32Array(city.navCols * city.navRows),
     flowAt: -1,
@@ -663,14 +748,20 @@ export function wantedPolice(s: ChaseState) {
   return Math.min(t.policeMax, Math.floor(t.policeStart + s.stars * t.policePerStar));
 }
 
+/** Var spelaren är just nu (bil, till fots eller spöke). */
+export function playerPos(s: ChaseState): { x: number; y: number; a: number; vx: number; vy: number } {
+  return s.mode === "car" ? s.player : s.body;
+}
+
 /** Hitta en vägpunkt på lagom avstånd från spelaren. */
 function spawnPoint(s: ChaseState, minD: number, maxD: number) {
   const { spawns } = s.city;
+  const me = playerPos(s);
   let best = spawns[0];
   let bestScore = Infinity;
   for (let k = 0; k < 40; k++) {
     const p = spawns[Math.floor(s.rng() * spawns.length)];
-    const d = Math.hypot(p.x - s.player.x, p.y - s.player.y);
+    const d = Math.hypot(p.x - me.x, p.y - me.y);
     const score = d < minD ? minD - d + 1000 : d > maxD ? d - maxD : 0;
     if (score < bestScore && !s.police.some((q) => Math.hypot(q.x - p.x, q.y - p.y) < 120)) {
       bestScore = score;
@@ -683,9 +774,10 @@ function spawnPoint(s: ChaseState, minD: number, maxD: number) {
 
 function syncPolice(s: ChaseState) {
   const want = wantedPolice(s);
+  const me = playerPos(s);
   while (s.police.length < want) {
     const p = spawnPoint(s, 650, 1100);
-    const a = Math.atan2(s.player.y - p.y, s.player.x - p.x);
+    const a = Math.atan2(me.y - p.y, me.x - p.x);
     s.police.push(mkCar(s.nextId++, p.x, p.y, Math.round(a / (Math.PI / 2)) * (Math.PI / 2), "polis", "#ffffff"));
     s.events.push({ t: s.t, kind: "spawn", x: p.x, y: p.y, power: 1 });
   }
@@ -719,16 +811,16 @@ function drive(s: ChaseState, car: Car, spec: CarSpec, steerIn: number, brake: b
   car.braking = brake;
   if (brake) {
     if (vf > 30) vf -= 980 * dt;
-    else vf = Math.max(-170, vf - 380 * dt);
+    else vf = Math.max(-160, vf - 360 * dt);
   } else if (vf < vmax) vf = Math.min(vmax, vf + spec.accel * throttle * dt * (vf < 0 ? 2.5 : 1));
   else vf -= (vf - vmax) * Math.min(1, dt * 3);
   vf -= vf * (grass ? 0.9 : 0.12) * dt;
   // Svängning: kräver fart, lite trögare i hög fart
-  const speedK = Math.min(1, Math.abs(vf) / 170);
+  const speedK = Math.min(1, Math.abs(vf) / 160);
   const turn = spec.turn * (1 - 0.22 * Math.min(1, Math.abs(vf) / spec.vmax));
   car.a = wrap(car.a + car.steer * turn * speedK * Math.sign(vf || 1) * dt);
   // Grepp – hårda svängar i hög fart ger sladd
-  const driftK = Math.min(1, Math.max(0, (Math.abs(vf) - 250) / 170)) * Math.abs(car.steer);
+  const driftK = Math.min(1, Math.max(0, (Math.abs(vf) - 230) / 160)) * Math.abs(car.steer);
   const grip = spec.grip * (1 - 0.62 * driftK) * (grass ? 0.7 : 1);
   vl *= Math.exp(-grip * dt);
   const nfx = Math.cos(car.a);
@@ -738,20 +830,32 @@ function drive(s: ChaseState, car: Car, spec: CarSpec, steerIn: number, brake: b
   car.slip = vl;
   car.x += car.vx * dt;
   car.y += car.vy * dt;
-  return collideWorld(s, car);
+  return collideWorld(s, car, CAR_RADIUS);
 }
 
 const near: number[] = [];
-/** Knuffa ut bilen ur hinder. Returnerar krockens styrka. */
-function collideWorld(s: ChaseState, car: Car): number {
-  const R = CAR_RADIUS;
+type Mover = { x: number; y: number; vx: number; vy: number };
+
+function pushOut(o: Mover, nx: number, ny: number, pen: number): number {
+  o.x += nx * pen;
+  o.y += ny * pen;
+  const vn = o.vx * nx + o.vy * ny;
+  if (vn < 0) {
+    o.vx -= vn * nx * 1.3;
+    o.vy -= vn * ny * 1.3;
+    o.vx *= 0.9;
+    o.vy *= 0.9;
+    return -vn;
+  }
+  return 0;
+}
+
+/** Knuffa ut ur hinder (hus, träd, vatten, parkerade bilar). Returnerar krockens styrka. */
+function collideWorld(s: ChaseState, car: Mover, R: number): number {
   let hit = 0;
   solidsNear(s.city, car.x, car.y, R + 4, near);
   for (const i of near) {
     const o = s.city.solids[i];
-    let nx = 0;
-    let ny = 0;
-    let pen = 0;
     if (o.t === "r") {
       const cx = Math.max(o.x, Math.min(car.x, o.x + o.w));
       const cy = Math.max(o.y, Math.min(car.y, o.y + o.h));
@@ -759,50 +863,48 @@ function collideWorld(s: ChaseState, car: Car): number {
       const dy = car.y - cy;
       const d = Math.hypot(dx, dy);
       if (d >= R) continue;
-      if (d > 0.001) {
-        nx = dx / d;
-        ny = dy / d;
-        pen = R - d;
-      } else {
+      if (d > 0.001) hit = Math.max(hit, pushOut(car, dx / d, dy / d, R - d));
+      else {
         // Mitten är inne i rektangeln – ut genom närmaste sida
         const l = car.x - o.x;
         const r = o.x + o.w - car.x;
         const t = car.y - o.y;
         const b = o.y + o.h - car.y;
         const m = Math.min(l, r, t, b);
-        if (m === l) [nx, ny, pen] = [-1, 0, l + R];
-        else if (m === r) [nx, ny, pen] = [1, 0, r + R];
-        else if (m === t) [nx, ny, pen] = [0, -1, t + R];
-        else [nx, ny, pen] = [0, 1, b + R];
+        if (m === l) hit = Math.max(hit, pushOut(car, -1, 0, l + R));
+        else if (m === r) hit = Math.max(hit, pushOut(car, 1, 0, r + R));
+        else if (m === t) hit = Math.max(hit, pushOut(car, 0, -1, t + R));
+        else hit = Math.max(hit, pushOut(car, 0, 1, b + R));
       }
     } else {
       const dx = car.x - o.x;
       const dy = car.y - o.y;
       const d = Math.hypot(dx, dy);
       if (d >= R + o.r) continue;
-      nx = d > 0.001 ? dx / d : 1;
-      ny = d > 0.001 ? dy / d : 0;
-      pen = R + o.r - d;
+      hit = Math.max(hit, pushOut(car, d > 0.001 ? dx / d : 1, d > 0.001 ? dy / d : 0, R + o.r - d));
     }
-    car.x += nx * pen;
-    car.y += ny * pen;
-    const vn = car.vx * nx + car.vy * ny;
-    if (vn < 0) {
-      hit = Math.max(hit, -vn);
-      car.vx -= vn * nx * 1.3;
-      car.vy -= vn * ny * 1.3;
-      car.vx *= 0.9;
-      car.vy *= 0.9;
+  }
+  // Parkerade bilar: två cirklar längs bilen
+  for (const p of s.parked) {
+    if (Math.abs(p.x - car.x) > 60 || Math.abs(p.y - car.y) > 60) continue;
+    for (const k of [-12, 12]) {
+      const cx = p.x + Math.cos(p.a) * k;
+      const cy = p.y + Math.sin(p.a) * k;
+      const dx = car.x - cx;
+      const dy = car.y - cy;
+      const d = Math.hypot(dx, dy);
+      const min = R + 13;
+      if (d < min) hit = Math.max(hit, pushOut(car, d > 0.001 ? dx / d : 1, d > 0.001 ? dy / d : 0, min - d));
     }
   }
   return hit;
 }
 
-function collideCars(s: ChaseState, a: Car, b: Car): number {
+function collideCars(a: Mover, b: Mover, ra = CAR_RADIUS, rb = CAR_RADIUS): number {
   const dx = b.x - a.x;
   const dy = b.y - a.y;
   const d = Math.hypot(dx, dy);
-  const min = CAR_RADIUS * 2 - 2;
+  const min = ra + rb - 2;
   if (d >= min || d < 0.001) return 0;
   const nx = dx / d;
   const ny = dy / d;
@@ -847,9 +949,11 @@ function nearestOpen(city: City, idx: number) {
 }
 
 const queue = new Int32Array(1 << 16);
+/** Flödesfält mot målet (spelaren, eller senast kända plats om spåret är tappat). */
 function updateFlow(s: ChaseState) {
   const city = s.city;
-  const goal = nearestOpen(city, navIndex(city, s.player.x, s.player.y));
+  const target = s.lost ? s.lastKnown : playerPos(s);
+  const goal = nearestOpen(city, navIndex(city, target.x, target.y));
   if (goal === s.flowFrom && s.t - s.flowAt < 0.6) return;
   s.flowFrom = goal;
   s.flowAt = s.t;
@@ -882,17 +986,20 @@ function lineClear(city: City, x0: number, y0: number, x1: number, y1: number) {
   return true;
 }
 
-function policeTarget(s: ChaseState, p: Car): [number, number] {
+/** Ser polisen spelaren? Spöket syns inte. */
+function sees(s: ChaseState, p: Car): boolean {
+  if (s.mode === "ghost") return false;
+  const me = playerPos(s);
+  const d = Math.hypot(me.x - p.x, me.y - p.y);
+  if (d < 170) return true;
+  const range = s.mode === "foot" ? 400 : 540;
+  return d < range && lineClear(s.city, p.x, p.y, me.x, me.y);
+}
+
+function followFlow(s: ChaseState, p: Car): [number, number] {
   const city = s.city;
-  const pl = s.player;
-  const d = Math.hypot(pl.x - p.x, pl.y - p.y);
-  if (d < 300 && lineClear(city, p.x, p.y, pl.x, pl.y)) {
-    const lead = Math.min(0.45, d / 600);
-    return [pl.x + pl.vx * lead, pl.y + pl.vy * lead];
-  }
   let k = nearestOpen(city, navIndex(city, p.x, p.y));
   const C = city.navCols;
-  // Följ flödet några steg framåt
   for (let step = 0; step < 4; step++) {
     const c = k % C;
     const r = (k / C) | 0;
@@ -926,8 +1033,42 @@ function policeTarget(s: ChaseState, p: Car): [number, number] {
   return [(k % C) * NAV + NAV / 2, ((k / C) | 0) * NAV + NAV / 2];
 }
 
+function policeTarget(s: ChaseState, p: Car): [number, number] {
+  const city = s.city;
+  // Spåret tappat: åk till senast kända plats och sök sedan runt omkring
+  if (s.lost) {
+    const dk = Math.hypot(s.lastKnown.x - p.x, s.lastKnown.y - p.y);
+    if (dk < 220 || p.search) {
+      if (!p.search || s.t > p.search.t || Math.hypot(p.search.x - p.x, p.search.y - p.y) < 60) {
+        const sp = s.city.spawns.filter((q) => Math.hypot(q.x - s.lastKnown.x, q.y - s.lastKnown.y) < 900);
+        const q = sp.length ? sp[Math.floor(s.rng() * sp.length)] : s.lastKnown;
+        p.search = { x: q.x, y: q.y, t: s.t + 7 };
+      }
+      if (lineClear(city, p.x, p.y, p.search.x, p.search.y)) return [p.search.x, p.search.y];
+    }
+    return followFlow(s, p);
+  }
+  p.search = undefined;
+  const me = playerPos(s);
+  const d = Math.hypot(me.x - p.x, me.y - p.y);
+  // Varannan polis försöker genskjuta: siktar på där du kommer att vara
+  const interceptor = p.id % 2 === 1 && s.mode === "car";
+  if (interceptor && d > 140 && d < 650) {
+    const lead = Math.min(1.1, d / 420);
+    const tx = me.x + me.vx * lead;
+    const ty = me.y + me.vy * lead;
+    if (lineClear(city, p.x, p.y, tx, ty)) return [tx, ty];
+  }
+  if (d < 320 && lineClear(city, p.x, p.y, me.x, me.y)) {
+    const lead = Math.min(0.45, d / 600);
+    return [me.x + me.vx * lead, me.y + me.vy * lead];
+  }
+  return followFlow(s, p);
+}
+
 function drivePolice(s: ChaseState, p: Car, dt: number): number {
   const spec = policeSpec(s.stars, s.tuning, playerSpec(s).vmax);
+  if (s.lost) spec.vmax *= 0.75; // söker lugnare
   const [tx, ty] = policeTarget(s, p);
   let desired = Math.atan2(ty - p.y, tx - p.x);
   // Håll lite avstånd till andra poliser
@@ -950,7 +1091,100 @@ function drivePolice(s: ChaseState, p: Car, dt: number): number {
   }
   const brake = Math.abs(diff) > 1.3 && speed > 220;
   if (Math.abs(diff) > Math.PI * 0.85 && speed < 60) diff = 0; // vänd genom att backa ut via stuck-logiken
-  return drive(s, p, spec, Math.max(-1, Math.min(1, diff * 2.4)), brake, dt);
+  // Ramma: extra gas när polisen är nära och siktar rakt på dig
+  const me = playerPos(s);
+  const close = !s.lost && Math.hypot(me.x - p.x, me.y - p.y) < 160 && Math.abs(diff) < 0.35;
+  return drive(s, p, close ? { ...spec, vmax: spec.vmax * 1.12, accel: spec.accel * 1.6 } : spec, Math.max(-1, Math.min(1, diff * 2.4)), brake, dt);
+}
+
+/* ---------- Kropp: bil, till fots, spöke ---------- */
+
+function nearestParked(s: ChaseState, x: number, y: number, range: number): ParkedCar | null {
+  let best: ParkedCar | null = null;
+  let bd = range;
+  for (const p of s.parked) {
+    const d = Math.hypot(p.x - x, p.y - y);
+    if (d < bd) ((bd = d), (best = p));
+  }
+  return best;
+}
+
+/** Lämna bilen (den blir parkerad) – returnerar dess id. */
+function leaveCar(s: ChaseState): number {
+  const pl = s.player;
+  const id = s.nextId++ + 5000;
+  s.parked.push({ id, x: pl.x, y: pl.y, a: pl.a, model: pl.model, color: pl.color });
+  return id;
+}
+
+function takeCar(s: ChaseState, car: ParkedCar, fresh: boolean) {
+  s.parked = s.parked.filter((p) => p !== car);
+  Object.assign(s.player, { x: car.x, y: car.y, a: car.a, vx: 0, vy: 0, steer: 0, slip: 0, model: car.model, color: car.color });
+  if (fresh) s.hp = CAR_HP;
+  s.mode = "car";
+  s.homeCar = null;
+}
+
+/** Kliv ur eller in i en bil (knapp E). */
+export function toggleExit(s: ChaseState): boolean {
+  if (s.phase !== "drive") return false;
+  if (s.mode === "car") {
+    const speed = Math.hypot(s.player.vx, s.player.vy);
+    if (speed > 175) return false; // sakta ner först
+    leaveCar(s);
+    const side = s.player.a + Math.PI / 2;
+    s.body = { x: s.player.x + Math.cos(side) * 26, y: s.player.y + Math.sin(side) * 26, a: s.player.a, vx: 0, vy: 0 };
+    collideWorld(s, s.body, FOOT_RADIUS);
+    s.mode = "foot";
+    s.events.push({ t: s.t, kind: "exit", x: s.body.x, y: s.body.y, power: 1 });
+    return true;
+  }
+  if (s.mode === "foot") {
+    const car = nearestParked(s, s.body.x, s.body.y, ENTER_RANGE);
+    if (!car) return false;
+    const different = car.color !== s.player.color || car.model !== s.player.model;
+    takeCar(s, car, different);
+    s.events.push({ t: s.t, kind: "enter", x: car.x, y: car.y, power: 1 });
+    return true;
+  }
+  return false;
+}
+
+function startGhost(s: ChaseState) {
+  const me = playerPos(s);
+  if (s.mode === "car") s.homeCar = leaveCar(s);
+  else s.homeCar = null;
+  s.body = { x: me.x, y: me.y, a: me.a, vx: 0, vy: 0 };
+  s.mode = "ghost";
+  s.ghostT = GHOST_TIME;
+  s.ghostHold = 0;
+  s.events.push({ t: s.t, kind: "ghost", x: me.x, y: me.y, power: 1 });
+}
+
+function endGhost(s: ChaseState, into: ParkedCar | null) {
+  s.ghostCd = GHOST_COOLDOWN;
+  if (into) {
+    const fresh = into.id !== s.homeCar;
+    takeCar(s, into, fresh);
+    s.events.push({ t: s.t, kind: "possess", x: into.x, y: into.y, power: 1 });
+    // Bytte bil utan att någon såg det: polisen tappar spåret
+    if (fresh && !s.police.some((p) => Math.hypot(p.x - into.x, p.y - into.y) < 260)) loseTrack(s);
+    return;
+  }
+  // Tiden tog slut: tillbaka till kroppen
+  const home = s.homeCar !== null ? s.parked.find((p) => p.id === s.homeCar) : null;
+  if (home) takeCar(s, home, false);
+  else s.mode = "foot";
+}
+
+function loseTrack(s: ChaseState) {
+  if (s.lost) return;
+  s.lost = true;
+  s.escapes++;
+  const pts = Math.round(POINTS.escape * multiplier(s.stars));
+  s.score += pts;
+  const me = playerPos(s);
+  s.events.push({ t: s.t, kind: "escape", x: me.x, y: me.y, power: pts });
 }
 
 /* ---------- Steg ---------- */
@@ -968,17 +1202,53 @@ export function step(s: ChaseState, realDt: number) {
       p.vx *= 0.92;
       p.vy *= 0.92;
     }
+    s.bullets = [];
     if (s.bustedT <= 0) respawn(s);
     return;
   }
 
   updateFlow(s);
-  const base = playerSpec(s);
-  const spec = s.boost > 0 ? { ...base, vmax: base.vmax * 1.25, accel: base.accel * 2 } : base;
-  const steer = s.phase === "question" ? 0 : s.input.steer;
-  const brake = s.phase === "question" ? false : s.input.brake;
-  const hit = drive(s, pl, spec, steer, brake, dt);
-  if (hit > 160) s.events.push({ t: s.t, kind: "crash", x: pl.x, y: pl.y, power: Math.min(1, hit / 500) });
+  const asking = s.phase === "question";
+  const steer = asking ? 0 : s.input.steer;
+  const brake = asking ? false : s.input.brake;
+  s.ghostCd = Math.max(0, s.ghostCd - dt);
+
+  // Spöke: håll in knappen
+  if (!asking && s.mode !== "ghost" && s.input.ghost && s.ghostCd <= 0) {
+    s.ghostHold += realDt / GHOST_HOLD;
+    if (s.ghostHold >= 1) startGhost(s);
+  } else if (s.mode !== "ghost") s.ghostHold = Math.max(0, s.ghostHold - realDt * 3);
+
+  if (s.mode === "car") {
+    const base = playerSpec(s);
+    const spec = s.boost > 0 ? { ...base, vmax: base.vmax * 1.25, accel: base.accel * 2 } : base;
+    const hit = drive(s, pl, spec, steer, brake, dt);
+    if (hit > 160) s.events.push({ t: s.t, kind: "crash", x: pl.x, y: pl.y, power: Math.min(1, hit / 500) });
+  } else {
+    // Till fots eller spöke: vänd med styrningen, gå/sväva framåt
+    const b = s.body;
+    const ghost = s.mode === "ghost";
+    const speed = ghost ? GHOST_SPEED : WALK_SPEED;
+    b.a = wrap(b.a + steer * (ghost ? 4.2 : 4.6) * dt);
+    const go = brake ? 0 : 1;
+    b.vx = Math.cos(b.a) * speed * go;
+    b.vy = Math.sin(b.a) * speed * go;
+    b.x += b.vx * dt;
+    b.y += b.vy * dt;
+    if (ghost) {
+      b.x = Math.max(CELL, Math.min(s.city.w - CELL, b.x));
+      b.y = Math.max(CELL, Math.min(s.city.h - CELL, b.y));
+      s.ghostT -= dt;
+      const car = nearestParked(s, b.x, b.y, 30);
+      if (car && (car.id !== s.homeCar || s.ghostT < GHOST_TIME - 0.8)) endGhost(s, car);
+      else if (s.ghostT <= 0) endGhost(s, null);
+    } else collideWorld(s, b, FOOT_RADIUS);
+    // Den parkerade bilen står still medan man går eller svävar
+    if ((s.mode as BodyMode) !== "car") {
+      pl.vx = 0;
+      pl.vy = 0;
+    }
+  }
   s.boost = Math.max(0, s.boost - dt);
   s.invuln = Math.max(0, s.invuln - dt);
   s.nearCd = Math.max(0, s.nearCd - dt);
@@ -987,47 +1257,113 @@ export function step(s: ChaseState, realDt: number) {
     const h = drivePolice(s, p, dt);
     if (h > 220) s.events.push({ t: s.t, kind: "crash", x: p.x, y: p.y, power: Math.min(1, h / 600) * 0.6 });
   }
+  const me = playerPos(s);
   for (let i = 0; i < s.police.length; i++) {
-    for (let j = i + 1; j < s.police.length; j++) collideCars(s, s.police[i], s.police[j]);
-    const h = collideCars(s, pl, s.police[i]);
-    if (h > 120) s.events.push({ t: s.t, kind: "crash", x: (pl.x + s.police[i].x) / 2, y: (pl.y + s.police[i].y) / 2, power: Math.min(1, h / 500) });
+    for (let j = i + 1; j < s.police.length; j++) collideCars(s.police[i], s.police[j]);
+    if (s.mode === "car") {
+      const h = collideCars(pl, s.police[i]);
+      if (h > 120) s.events.push({ t: s.t, kind: "crash", x: (pl.x + s.police[i].x) / 2, y: (pl.y + s.police[i].y) / 2, power: Math.min(1, h / 500) });
+    } else if (s.mode === "foot" && s.invuln <= 0 && Math.hypot(s.police[i].x - me.x, s.police[i].y - me.y) < CAR_RADIUS + FOOT_RADIUS + 4) {
+      return bust(s, false);
+    }
   }
 
-  // Mätaren och nära ögat
-  const speed = Math.hypot(pl.vx, pl.vy);
+  // Ser polisen dig?
+  let seen = false;
+  for (const p of s.police) if (sees(s, p)) seen = true;
+  if (seen) {
+    if (s.lost) s.events.push({ t: s.t, kind: "spotted", x: me.x, y: me.y, power: 1 });
+    s.lost = false;
+    s.unseen = 0;
+    s.lastKnown = { x: me.x, y: me.y };
+  } else {
+    s.unseen += dt;
+    if (s.unseen >= LOSE_TIME) loseTrack(s);
+  }
+
+  // Polisen skjuter
+  if (!s.lost && s.mode !== "ghost" && s.invuln <= 0 && !asking) {
+    const canShoot = s.mode === "foot" || s.stars >= s.tuning.shootFrom;
+    for (const p of s.police) {
+      p.fireCd -= dt;
+      if (!canShoot || p.fireCd > 0) continue;
+      const d = Math.hypot(me.x - p.x, me.y - p.y);
+      if (d > 460 || !lineClear(s.city, p.x, p.y, me.x, me.y)) continue;
+      // Siktar dit du var nyss (ingen perfekt förutsägelse) – går att väja undan
+      const lead = (d / 760) * 0.5;
+      const aim = Math.atan2(me.y + me.vy * lead - p.y, me.x + me.vx * lead - p.x) + (s.rng() - 0.5) * 0.24;
+      s.bullets.push({ x: p.x + Math.cos(aim) * 22, y: p.y + Math.sin(aim) * 22, vx: Math.cos(aim) * 760, vy: Math.sin(aim) * 760, life: 0.75 });
+      s.events.push({ t: s.t, kind: "shot", x: p.x, y: p.y, power: aim });
+      p.fireCd = Math.max(0.6, 1.9 - s.stars * 0.08) + s.rng() * 0.6;
+    }
+  }
+  // Kulor
+  for (const b of s.bullets) {
+    b.life -= dt;
+    b.x += b.vx * dt;
+    b.y += b.vy * dt;
+    if (blockedAt(s.city, b.x, b.y, 0)) {
+      b.life = 0;
+      continue;
+    }
+    if (s.mode === "ghost") continue;
+    const r = s.mode === "car" ? CAR_RADIUS + 2 : FOOT_RADIUS + 3;
+    if (Math.hypot(b.x - me.x, b.y - me.y) < r) {
+      b.life = 0;
+      if (s.mode === "foot") return bust(s, false);
+      s.hp -= BULLET_DAMAGE;
+      s.events.push({ t: s.t, kind: "hit", x: b.x, y: b.y, power: s.hp });
+      if (s.hp <= 0) {
+        s.events.push({ t: s.t, kind: "wreck", x: me.x, y: me.y, power: 1 });
+        return bust(s, true);
+      }
+    }
+  }
+  s.bullets = s.bullets.filter((b) => b.life > 0);
+
+  // Mätaren, nära ögat och poäng
+  const speed = Math.hypot(me.vx, me.vy);
   let closest = Infinity;
-  for (const p of s.police) closest = Math.min(closest, Math.hypot(p.x - pl.x, p.y - pl.y));
+  for (const p of s.police) closest = Math.min(closest, Math.hypot(p.x - me.x, p.y - me.y));
+  const mult = multiplier(s.stars);
   if (s.phase === "drive") {
+    s.score += POINTS.perSecond * mult * dt;
     let rate = speed > 80 ? s.tuning.heatBase : s.tuning.heatBase * 0.6;
-    if (closest < 120 && speed > 220) {
+    if (s.mode === "car" && closest < 120 && speed > 220) {
       rate += 0.3;
       if (s.nearCd <= 0) {
-        s.events.push({ t: s.t, kind: "nearmiss", x: pl.x, y: pl.y, power: 1 });
+        s.score += POINTS.nearMiss * mult;
+        s.events.push({ t: s.t, kind: "nearmiss", x: me.x, y: me.y, power: Math.round(POINTS.nearMiss * mult) });
         s.nearCd = 2.5;
       }
     }
-    if (Math.abs(pl.slip) > 120) rate += 0.12;
+    if (s.mode === "car" && Math.abs(pl.slip) > 120) rate += 0.12;
     s.heat = Math.min(1, s.heat + rate * dt);
-    if (s.heat >= 1) {
+    // Ingen fråga mitt i ett spökhopp
+    if (s.heat >= 1 && s.mode !== "ghost") {
       s.phase = "question";
       s.timeScale = QUESTION_SLOWMO;
     }
   }
 
-  // Fast?
-  if (s.phase === "drive" && s.invuln <= 0) {
+  // Fast i bilen (inträngd)?
+  if (s.phase === "drive" && s.invuln <= 0 && s.mode === "car") {
     const boxed = closest < CAR_RADIUS * 2 + 16 && speed < 45;
     s.bust = boxed ? s.bust + dt / BUST_TIME : Math.max(0, s.bust - (dt / BUST_TIME) * 1.5);
-    if (s.bust >= 1) {
-      s.phase = "busted";
-      s.bustedT = BUSTED_PAUSE;
-      s.bust = 1;
-      s.busts++;
-      s.lostStar = s.stars > 0;
-      s.stars = Math.max(0, s.stars - 1);
-      s.events.push({ t: s.t, kind: "busted", x: pl.x, y: pl.y, power: 1 });
-    }
+    if (s.bust >= 1) bust(s, false);
   } else s.bust = Math.max(0, s.bust - dt);
+}
+
+function bust(s: ChaseState, wrecked: boolean) {
+  const me = playerPos(s);
+  s.phase = "busted";
+  s.bustedT = BUSTED_PAUSE;
+  s.bust = 1;
+  s.busts++;
+  s.lostStar = s.stars > 0;
+  s.stars = Math.max(0, s.stars - 1);
+  s.bullets = [];
+  s.events.push({ t: s.t, kind: "busted", x: me.x, y: me.y, power: wrecked ? 2 : 1 });
 }
 
 function respawn(s: ChaseState) {
@@ -1044,10 +1380,16 @@ function respawn(s: ChaseState) {
     }
   }
   Object.assign(s.player, { x: best.x, y: best.y, a: best.a, vx: 0, vy: 0, steer: 0, slip: 0 });
+  s.mode = "car";
+  s.hp = CAR_HP;
+  s.homeCar = null;
   s.phase = "drive";
   s.bust = 0;
   s.invuln = RESPAWN_INVULN;
   s.heat = Math.min(s.heat, 0.5);
+  s.lost = false;
+  s.unseen = 0;
+  s.lastKnown = { x: best.x, y: best.y };
   // Polisen startar om på avstånd
   const n = s.police.length;
   s.police = [];
@@ -1060,17 +1402,20 @@ function respawn(s: ChaseState) {
 
 /** Svar på frågan som mätaren gav. */
 export function answer(s: ChaseState, correct: boolean) {
+  const me = playerPos(s);
   if (correct) {
     s.stars++;
     s.bestStars = Math.max(s.bestStars, s.stars);
     s.heat = 0;
     s.boost = 1.4;
-    s.events.push({ t: s.t, kind: "star", x: s.player.x, y: s.player.y, power: s.stars });
+    const pts = Math.round(POINTS.correct * multiplier(s.stars));
+    s.score += pts;
+    s.events.push({ t: s.t, kind: "star", x: me.x, y: me.y, power: pts });
     syncPolice(s);
   } else {
     // Mätaren börjar nästan om – att gissa snabbt ska inte löna sig
     s.heat = 0.2;
-    s.events.push({ t: s.t, kind: "miss", x: s.player.x, y: s.player.y, power: 1 });
+    s.events.push({ t: s.t, kind: "miss", x: me.x, y: me.y, power: 1 });
   }
 }
 
@@ -1083,7 +1428,8 @@ export function resume(s: ChaseState) {
 
 /** Normaliserad position för projektorn (0..1). */
 export function mapPos(s: ChaseState): { x: number; y: number } {
-  return { x: s.player.x / s.city.w, y: s.player.y / s.city.h };
+  const me = playerPos(s);
+  return { x: me.x / s.city.w, y: me.y / s.city.h };
 }
 
 export function seedFromCode(code: string): number {

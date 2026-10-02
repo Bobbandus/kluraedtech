@@ -27,6 +27,8 @@ import { DefenseRenderer } from "./render";
 import { drawTowerIcon } from "./sprites";
 import { useStore } from "@/lib/store";
 import { QuestionImage } from "@/components/QuestionImage";
+import { sfx, useSound } from "@/lib/sound";
+import { CountUp } from "../parts";
 import s from "./defense.module.css";
 
 function fmtTime(ms: number) {
@@ -62,6 +64,8 @@ export default function DefenseGame({ view, act, clockOffset }: { view: PlayerVi
   const [banner, setBanner] = useState<{ text: string; boss: boolean; key: number } | null>(null);
   const [hint, setHint] = useState("");
   const [woodBump, setWoodBump] = useState(0);
+  const [woodDelta, setWoodDelta] = useState<{ amount: number; key: number } | null>(null);
+  const [soundOn, toggleSound] = useSound();
   const uiRef = useRef({ placing, selected, hover, reduced });
   uiRef.current = { placing, selected, hover, reduced };
   const ended = view.phase === "ended";
@@ -80,6 +84,8 @@ export default function DefenseGame({ view, act, clockOffset }: { view: PlayerVi
     let last = performance.now();
     let lastWave = 0;
     let uiTick = 0;
+    let lastSound = -1;
+    let lastWood = game.current.wood;
     const loop = (now: number) => {
       const dt = Math.min(0.1, (now - last) / 1000);
       last = now;
@@ -88,6 +94,19 @@ export default function DefenseGame({ view, act, clockOffset }: { view: PlayerVi
       if (g.wave !== lastWave) {
         lastWave = g.wave;
         setBanner({ text: g.wave % 5 === 0 ? `Våg ${g.wave} – Bergakungen kommer!` : `Våg ${g.wave}`, boss: g.wave % 5 === 0, key: g.wave });
+      }
+      for (const e of g.events) {
+        if (e.t <= lastSound) continue;
+        if (e.type === "kill") sfx("kill");
+        else if (e.type === "leak") sfx("leak");
+        else if (e.type === "wave") sfx(e.boss ? "boss" : "wave");
+        else if (e.type === "income") sfx("coin");
+      }
+      if (g.events.length) lastSound = g.events[g.events.length - 1].t;
+      if (g.wood !== lastWood) {
+        const d = g.wood - lastWood;
+        if (Math.abs(d) >= 10) setWoodDelta({ amount: d, key: now });
+        lastWood = g.wood;
       }
       const u = uiRef.current;
       r.draw(g, { hover: u.hover, placing: u.placing, selectedTowerId: u.selected, reducedMotion: u.reduced }, dt);
@@ -134,6 +153,7 @@ export default function DefenseGame({ view, act, clockOffset }: { view: PlayerVi
     }
     if (placing) {
       if (build(g, placing, cell.c, cell.r)) {
+        sfx("build");
         setHint(`${TOWERS[placing].name} byggd!`);
         if (g.wood < TOWERS[placing].cost[0]) setPlacing(null);
       } else if (g.wood < TOWERS[placing].cost[0]) setHint("Inte tillräckligt med virke – svara på frågor!");
@@ -167,8 +187,16 @@ export default function DefenseGame({ view, act, clockOffset }: { view: PlayerVi
         <span className={s.stat} aria-label={`Stugans liv ${g.hp} av ${g.maxHp}`}>
           <Icon name="heart" size={17} style={{ color: "#ff8a7a" }} /> {g.hp}
         </span>
-        <span key={woodBump} className={`${s.stat} ${s.wood} ${woodBump ? s.statBump : ""}`} aria-label={`Virke ${g.wood}`}>
-          <Icon name="log" size={18} /> {g.wood}
+        <span key={woodBump} className={`${s.woodBig} ${woodBump ? s.statBump : ""}`} aria-label={`Virke ${g.wood}`}>
+          <span className={s.woodIcon}>
+            <Icon name="log" size={20} />
+          </span>
+          <CountUp value={g.wood} duration={500} />
+          {woodDelta && (
+            <span key={woodDelta.key} className={`${s.woodDelta} ${woodDelta.amount < 0 ? s.woodSpend : ""}`} aria-hidden="true">
+              {woodDelta.amount > 0 ? `+${woodDelta.amount}` : woodDelta.amount}
+            </span>
+          )}
         </span>
         <span className={s.stat}>
           <Icon name="waves" size={17} /> Våg {Math.max(1, g.wave)}
@@ -180,6 +208,9 @@ export default function DefenseGame({ view, act, clockOffset }: { view: PlayerVi
           </span>
         )}
         <span className={`${s.stat} ${s.hideSm}`}>{view.you.name}</span>
+        <button className={s.soundBtn} onClick={toggleSound} aria-label={soundOn ? "Stäng av ljud" : "Sätt på ljud"} aria-pressed={soundOn}>
+          <Icon name={soundOn ? "volume" : "mute"} size={18} />
+        </button>
       </header>
 
       <main id="innehall" className={s.layout}>
@@ -225,7 +256,10 @@ export default function DefenseGame({ view, act, clockOffset }: { view: PlayerVi
                   className="btn btn-accent btn-sm"
                   disabled={g.wood < (upgradeCost(sel) ?? 0)}
                   onClick={() => {
-                    if (upgrade(g, sel.id)) setHint("Uppgraderad!");
+                    if (upgrade(g, sel.id)) {
+                      sfx("upgrade");
+                      setHint("Uppgraderad!");
+                    }
                   }}
                 >
                   <Icon name="chevronUp" size={16} /> Uppgradera · {upgradeCost(sel)}
@@ -336,6 +370,7 @@ function QuestionPanel({ act, disabled, streak, onCorrect: onRight }: { act: (a:
       return;
     }
     setRes(r.answer);
+    sfx(r.answer.correct ? "correct" : "wrong");
     if (r.answer.correct) onRight(r.answer.streak);
     setTimeout(load, (r.answer.correct ? FEEDBACK_CORRECT : FEEDBACK_WRONG) * 1000);
   };

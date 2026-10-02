@@ -14,8 +14,8 @@ export interface ClassStats {
   trend: number | null; // senaste minus snittet av de tidigare
 }
 
-export function classesFrom(sessions: SessionResult[]): ClassStats[] {
-  return CLASSES.map((cls) => {
+export function classesFrom(sessions: SessionResult[], classes: ClassGroup[] = CLASSES): ClassStats[] {
+  return classes.map((cls) => {
     const list = sessions.filter((r) => r.className === cls.name).sort((a, b) => a.date.localeCompare(b.date));
     const accs = list.map(classAccuracy);
     const latest = accs.length ? accs[accs.length - 1] : null;

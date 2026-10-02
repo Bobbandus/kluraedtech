@@ -5,8 +5,8 @@
  * partiklar och ljus ritas varje bildruta ovanpå.
  */
 
-import { CELL, PLAYER_SPEC, ROAD, ROUNDABOUT_R, SIDEWALK, type ChaseState, type City } from "@/lib/game/chase";
-import { drawBuilding, drawBuildingShadow, drawCar, drawLamp, drawSirenGlow, drawTree, drawTreeShadow, hash2, INK, shade, type Ctx } from "./sprites";
+import { CELL, ENTER_RANGE, GHOST_TIME, PLAYER_SPEC, ROAD, ROUNDABOUT_R, SIDEWALK, playerPos, type ChaseState, type City } from "@/lib/game/chase";
+import { drawBuilding, drawBuildingShadow, drawCar, drawGhost, drawLamp, drawPerson, drawSirenGlow, drawTree, drawTreeShadow, hash2, INK, shade, type Ctx } from "./sprites";
 
 const CHUNK = 512;
 const MAX_CHUNKS = 28;
@@ -39,7 +39,7 @@ export function drawCityFull(ctx: Ctx, city: City, scale: number) {
   ctx.restore();
 }
 
-export function drawCityRegion(ctx: Ctx, city: City, x0: number, y0: number, size: number) {
+export function drawCityRegion(ctx: Ctx, city: City, x0: number, y0: number, size: number, withParked = true) {
   const M = 90; // marginal för skuggor och tak som sticker ut
   const vis = (x: number, y: number, w: number, h: number) => inRect(x, y, w, h, x0 - M, y0 - M, size + M * 2);
 
@@ -267,7 +267,7 @@ export function drawCityRegion(ctx: Ctx, city: City, x0: number, y0: number, siz
   // Skuggor, parkerade bilar, hus, träd, lampor
   for (const b of city.buildings) if (vis(b.x, b.y - 20, b.w + 30, b.h + 40)) drawBuildingShadow(ctx, b);
   for (const t of city.trees) if (vis(t.x - t.r, t.y - t.r, t.r * 2 + 20, t.r * 2 + 20)) drawTreeShadow(ctx, t);
-  for (const p of city.parked) if (vis(p.x - 40, p.y - 40, 80, 80)) drawCar(ctx, p.x, p.y, p.a, p.model, p.color, chunkScale);
+  if (withParked) for (const p of city.parked) if (vis(p.x - 40, p.y - 40, 80, 80)) drawCar(ctx, p.x, p.y, p.a, p.model, p.color, chunkScale);
   const bs = city.buildings.filter((b) => vis(b.x, b.y - 20, b.w, b.h + 20)).sort((a, b) => a.y + a.h - (b.y + b.h));
   for (const b of bs) drawBuilding(ctx, b);
   for (const t of city.trees) if (vis(t.x - t.r, t.y - t.r, t.r * 2, t.r * 2)) drawTree(ctx, t);
@@ -591,7 +591,7 @@ export class ChaseRenderer {
     ctx.beginPath();
     ctx.rect(cx * CHUNK, cy * CHUNK, CHUNK, CHUNK);
     ctx.clip();
-    drawCityRegion(ctx, city, cx * CHUNK, cy * CHUNK, CHUNK);
+    drawCityRegion(ctx, city, cx * CHUNK, cy * CHUNK, CHUNK, false);
     ctx.restore();
     this.chunks.set(key, { c, used: this.frame });
     return c;
@@ -606,8 +606,9 @@ export class ChaseRenderer {
   }
 
   snapCamera(s: ChaseState) {
-    this.cam.x = s.player.x;
-    this.cam.y = s.player.y;
+    const me = playerPos(s);
+    this.cam.x = me.x;
+    this.cam.y = me.y;
     this.cam.zoom = this.baseZoom();
   }
 
@@ -621,13 +622,14 @@ export class ChaseRenderer {
       this.city = city;
     }
     const pl = s.player;
+    const me = playerPos(s);
     this.consumeEvents(s, ui);
 
     // Kamera: leder framåt, zoomar ut med farten
-    const speed = Math.hypot(pl.vx, pl.vy);
-    const lead = 0.42;
-    const tx = pl.x + pl.vx * lead;
-    const ty = pl.y + pl.vy * lead;
+    const speed = Math.hypot(me.vx, me.vy);
+    const lead = s.mode === "car" ? 0.42 : 0.25;
+    const tx = me.x + me.vx * lead;
+    const ty = me.y + me.vy * lead;
     const k = 1 - Math.exp(-dt * 4);
     this.cam.x += (tx - this.cam.x) * k;
     this.cam.y += (ty - this.cam.y) * k;
@@ -690,9 +692,80 @@ export class ChaseRenderer {
       if (Math.abs(p.x - camX) > vw / 2 + 60 || Math.abs(p.y - camY) > vh / 2 + 60) continue;
       drawCar(ctx, p.x, p.y, p.a, "polis", p.color, scale, { steer: p.steer, braking: p.braking || p.reverse > 0, lights: this.time + p.id * 0.37 });
     }
+    // Parkerade bilar (går att byta till)
+    let target: { x: number; y: number } | null = null;
+    for (const p of s.parked) {
+      if (Math.abs(p.x - camX) > vw / 2 + 60 || Math.abs(p.y - camY) > vh / 2 + 60) continue;
+      drawCar(ctx, p.x, p.y, p.a, p.model, p.color, scale);
+      const d = Math.hypot(p.x - me.x, p.y - me.y);
+      if (s.mode === "foot" && d < ENTER_RANGE && (!target || d < Math.hypot(target.x - me.x, target.y - me.y))) target = p;
+    }
+    if (target) {
+      // Markera bilen man kan kliva in i
+      ctx.strokeStyle = "rgba(255,214,90,0.95)";
+      ctx.lineWidth = 3;
+      ctx.setLineDash([6, 5]);
+      ctx.beginPath();
+      ctx.arc(target.x, target.y, 34 + Math.sin(this.time * 6) * 2, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.setLineDash([]);
+    }
     const blink = s.invuln > 0 && s.phase === "drive" ? (Math.floor(this.time * 10) % 2 ? 0.45 : 1) : 1;
-    if (s.boost > 0) this.boostFlame(pl);
-    drawCar(ctx, pl.x, pl.y, pl.a, pl.model, pl.color, scale, { steer: pl.steer, braking: pl.braking, alpha: blink });
+    if (s.mode === "car") {
+      if (s.boost > 0) this.boostFlame(pl);
+      drawCar(ctx, pl.x, pl.y, pl.a, pl.model, pl.color, scale, { steer: pl.steer, braking: pl.braking, alpha: blink });
+    } else if (s.mode === "foot") {
+      drawPerson(ctx, me.x, me.y, me.a, pl.color, this.time, Math.hypot(me.vx, me.vy) > 10, blink);
+    } else {
+      // Spöke: släpar glitter efter sig
+      if (Math.random() < 0.6)
+        this.particles.push({ x: me.x + (Math.random() - 0.5) * 16, y: me.y + (Math.random() - 0.5) * 16, vx: 0, vy: 0, life: 0.6, max: 0.6, size: 3, kind: "speck", color: "#d9c8ff" });
+      drawGhost(ctx, me.x, me.y, me.a, this.time, s.ghostT / GHOST_TIME);
+    }
+
+    // Kulor
+    ctx.lineCap = "round";
+    for (const b of s.bullets) {
+      const len = 0.03;
+      ctx.strokeStyle = "rgba(255,230,140,0.95)";
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.moveTo(b.x - b.vx * len, b.y - b.vy * len);
+      ctx.lineTo(b.x, b.y);
+      ctx.stroke();
+      ctx.strokeStyle = "#ffffff";
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.moveTo(b.x - b.vx * len * 0.4, b.y - b.vy * len * 0.4);
+      ctx.lineTo(b.x, b.y);
+      ctx.stroke();
+    }
+    ctx.lineCap = "butt";
+
+    // Spökladdning: ring när man håller in knappen
+    if (s.ghostHold > 0.02 && s.mode !== "ghost") {
+      ctx.strokeStyle = "rgba(190,160,255,0.95)";
+      ctx.lineWidth = 5;
+      ctx.beginPath();
+      ctx.arc(me.x, me.y, 44, -Math.PI / 2, -Math.PI / 2 + s.ghostHold * Math.PI * 2);
+      ctx.stroke();
+    }
+
+    // Polis som tappat spåret: frågetecken
+    if (s.lost) {
+      ctx.font = "900 22px Nunito, system-ui, sans-serif";
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      for (const p of s.police) {
+        if (Math.abs(p.x - camX) > vw / 2 || Math.abs(p.y - camY) > vh / 2) continue;
+        ctx.fillStyle = "rgba(16,22,24,0.7)";
+        ctx.beginPath();
+        ctx.arc(p.x, p.y - 42, 15, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = "#fff";
+        ctx.fillText("?", p.x, p.y - 41);
+      }
+    }
 
     // Partiklar
     this.drawParticles(dt);
@@ -702,7 +775,7 @@ export class ChaseRenderer {
       ctx.strokeStyle = "rgba(255,255,255,0.9)";
       ctx.lineWidth = 4;
       ctx.beginPath();
-      ctx.arc(pl.x, pl.y, 40, -Math.PI / 2, -Math.PI / 2 + s.bust * Math.PI * 2);
+      ctx.arc(me.x, me.y, 40, -Math.PI / 2, -Math.PI / 2 + s.bust * Math.PI * 2);
       ctx.stroke();
       ctx.strokeStyle = "rgba(220,40,40,0.9)";
       ctx.lineWidth = 2;
@@ -719,7 +792,7 @@ export class ChaseRenderer {
       const m = 26;
       const ex = Math.max(m, Math.min(this.w - m, this.w / 2 + Math.cos(a) * this.w));
       const ey = Math.max(m + 70, Math.min(this.h - m, this.h / 2 + Math.sin(a) * this.h));
-      const d = Math.hypot(p.x - pl.x, p.y - pl.y);
+      const d = Math.hypot(p.x - me.x, p.y - me.y);
       const al = Math.max(0.25, Math.min(1, 1 - (d - 400) / 1200));
       ctx.save();
       ctx.translate(ex, ey);
@@ -758,7 +831,7 @@ export class ChaseRenderer {
   }
 
   private trackSkids(s: ChaseState) {
-    for (const car of [s.player, ...s.police]) {
+    for (const car of s.mode === "car" ? [s.player, ...s.police] : s.police) {
       const slip = Math.abs(car.slip);
       const speed = Math.hypot(car.vx, car.vy);
       const marking = slip > 85 || (car.braking && speed > 200);
@@ -795,6 +868,22 @@ export class ChaseRenderer {
           this.particles.push({ x: e.x, y: e.y, vx: Math.cos(a) * 160, vy: Math.sin(a) * 160, life: 0.8, max: 0.8, size: 7, kind: "star", color: "#f5c53a" });
         }
         this.particles.push({ x: e.x, y: e.y, vx: 0, vy: 0, life: 0.6, max: 0.6, size: 30, kind: "ring", color: "#f5c53a" });
+      } else if (e.kind === "shot") {
+        // Mynningsflamma
+        const a = e.power;
+        for (let i = 0; i < 3; i++)
+          this.particles.push({ x: e.x + Math.cos(a) * 24, y: e.y + Math.sin(a) * 24, vx: Math.cos(a + (Math.random() - 0.5)) * 160, vy: Math.sin(a + (Math.random() - 0.5)) * 160, life: 0.12, max: 0.12, size: 4, kind: "spark", color: "#fff1a8" });
+      } else if (e.kind === "hit") {
+        this.shake = Math.min(1, this.shake + 0.25);
+        for (let i = 0; i < 6; i++) {
+          const a = Math.random() * Math.PI * 2;
+          this.particles.push({ x: e.x, y: e.y, vx: Math.cos(a) * 140, vy: Math.sin(a) * 140, life: 0.25, max: 0.25, size: 2, kind: "spark", color: "#ffd75a" });
+        }
+      } else if (e.kind === "wreck") {
+        for (let i = 0; i < 14; i++)
+          this.particles.push({ x: e.x + (Math.random() - 0.5) * 30, y: e.y + (Math.random() - 0.5) * 30, vx: (Math.random() - 0.5) * 60, vy: (Math.random() - 0.5) * 60, life: 1.6, max: 1.6, size: 12 + Math.random() * 10, kind: "smoke", color: "#555" });
+      } else if (e.kind === "ghost" || e.kind === "possess") {
+        this.particles.push({ x: e.x, y: e.y, vx: 0, vy: 0, life: 0.7, max: 0.7, size: 24, kind: "ring", color: "#c9b2ff" });
       } else if (e.kind === "busted") {
         this.shake = ui.reducedMotion ? 0 : 0.8;
       } else if (e.kind === "respawn") {
@@ -817,7 +906,14 @@ export class ChaseRenderer {
       p.vx *= 1 - dt * 3;
       p.vy *= 1 - dt * 3;
       const k = Math.max(0, p.life / p.max);
-      if (p.kind === "smoke") {
+      if (p.kind === "speck") {
+        ctx.fillStyle = p.color;
+        ctx.globalAlpha = k;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.size * k, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.globalAlpha = 1;
+      } else if (p.kind === "smoke") {
         ctx.fillStyle = `rgba(236,232,224,${k * 0.5})`;
         ctx.beginPath();
         ctx.arc(p.x, p.y, p.size * (1.8 - k), 0, Math.PI * 2);

@@ -742,3 +742,96 @@ export function drawLamp(ctx: Ctx, x: number, y: number) {
   ctx.arc(x - 0.8, y - 0.8, 1.3, 0, Math.PI * 2);
   ctx.fill();
 }
+
+/* ---------- Till fots och spöke ---------- */
+
+/** Person ovanifrån: axlar, huvud och armar som pendlar när hen går. */
+export function drawPerson(ctx: Ctx, x: number, y: number, a: number, color: string, time: number, walking: boolean, alpha = 1) {
+  ctx.save();
+  ctx.globalAlpha = alpha;
+  // Markering så att man ser sig själv
+  ctx.strokeStyle = "rgba(255,255,255,0.85)";
+  ctx.lineWidth = 2.5;
+  ctx.beginPath();
+  ctx.arc(x, y, 22 + Math.sin(time * 5) * 1.5, 0, Math.PI * 2);
+  ctx.stroke();
+  ctx.translate(x, y);
+  ctx.scale(1.5, 1.5);
+  ctx.translate(-x, -y);
+  ctx.fillStyle = "rgba(10,18,20,0.3)";
+  ctx.beginPath();
+  ctx.ellipse(x + 3, y + 4, 10, 8, 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.translate(x, y);
+  ctx.rotate(a);
+  const swing = walking ? Math.sin(time * 12) * 4 : 0;
+  // Fötter
+  ctx.fillStyle = "#2a2f33";
+  ctx.beginPath();
+  ctx.ellipse(swing, -4, 4, 2.6, 0, 0, Math.PI * 2);
+  ctx.ellipse(-swing, 4, 4, 2.6, 0, 0, Math.PI * 2);
+  ctx.fill();
+  // Axlar/jacka
+  ctx.fillStyle = color;
+  ctx.strokeStyle = INK;
+  ctx.lineWidth = 1.4;
+  ctx.beginPath();
+  ctx.ellipse(-1, 0, 5.5, 9, 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.stroke();
+  // Armar
+  ctx.beginPath();
+  ctx.ellipse(-swing * 0.6, -8.5, 3.5, 2.6, 0, 0, Math.PI * 2);
+  ctx.ellipse(swing * 0.6, 8.5, 3.5, 2.6, 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.stroke();
+  // Huvud
+  ctx.fillStyle = "#f2c9a0";
+  ctx.beginPath();
+  ctx.arc(1, 0, 4.6, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.stroke();
+  ctx.fillStyle = "#4a3426";
+  ctx.beginPath();
+  ctx.arc(-0.5, 0, 4.2, Math.PI * 0.55, Math.PI * 1.45);
+  ctx.fill();
+  ctx.restore();
+}
+
+/** Spöke: genomskinligt, glödande, vågig kjol som fladdrar bakåt. */
+export function drawGhost(ctx: Ctx, x: number, y: number, a: number, time: number, left: number) {
+  ctx.save();
+  ctx.translate(x, y);
+  // Glöd
+  const g = ctx.createRadialGradient(0, 0, 4, 0, 0, 46);
+  g.addColorStop(0, "rgba(200,170,255,0.55)");
+  g.addColorStop(1, "rgba(200,170,255,0)");
+  ctx.fillStyle = g;
+  ctx.beginPath();
+  ctx.arc(0, 0, 46, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.rotate(a);
+  ctx.globalAlpha = 0.55 + 0.35 * Math.min(1, left * 3);
+  ctx.fillStyle = "#f4f0ff";
+  ctx.strokeStyle = "#7a5bd1";
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(12, 0);
+  ctx.bezierCurveTo(12, -14, -6, -15, -8, -11);
+  for (let i = 0; i <= 4; i++) {
+    const yy = -11 + i * 5.5;
+    const xx = -18 + Math.sin(time * 10 + i) * 3;
+    ctx.quadraticCurveTo(xx - 4, yy + 2.5, i === 4 ? -8 : -12, yy + 5.5 > 11 ? 11 : yy + 5.5);
+  }
+  ctx.bezierCurveTo(-6, 15, 12, 14, 12, 0);
+  ctx.closePath();
+  ctx.fill();
+  ctx.stroke();
+  // Ögon
+  ctx.fillStyle = "#3b2a6b";
+  ctx.beginPath();
+  ctx.ellipse(5, -4, 2, 2.6, 0, 0, Math.PI * 2);
+  ctx.ellipse(5, 4, 2, 2.6, 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.restore();
+}

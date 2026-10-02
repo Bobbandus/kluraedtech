@@ -7,9 +7,8 @@ import { CoverArt } from "@/components/cover";
 import { Icon } from "@/components/icons";
 import { EnergyIllu } from "@/components/EnergyIllu";
 import { ENERGY, type Energy } from "@/lib/game/engine";
-import { CLASSES } from "@/data/people";
 import { estimateMinutes } from "@/data/quizzes";
-import { useHydrated } from "@/lib/store";
+import { useHydrated, useClasses } from "@/lib/store";
 import { useQuiz } from "@/lib/quizzes";
 import { getTransport, saveHostKey } from "@/lib/backend";
 import type { GameMode } from "@/lib/rooms/types";
@@ -26,6 +25,7 @@ export default function HostSetup() {
   const [longer, setLonger] = useState(false);
   const [randomNames, setRandomNames] = useState(false);
   const [mode, setMode] = useState<GameMode>("fjall");
+  const CLASSES = useClasses();
   useEffect(() => {
     const sp = new URLSearchParams(window.location.search);
     const l = sp.get("lage");
@@ -57,7 +57,7 @@ export default function HostSetup() {
       const className = CLASSES.find((c) => c.id === cls)?.name;
       const { code, hostKey } = await getTransport().createRoom(
         { id: quiz.id, title: quiz.title, subject: quiz.subject, questions: quiz.questions },
-        { mode, energy, longerTime: longer, randomNames, minutes, className },
+        { mode, energy, longerTime: mode === "topptur" && longer, randomNames, minutes, className },
       );
       saveHostKey(code, hostKey);
       router.push(`/larare/live?kod=${code}`);
@@ -87,7 +87,7 @@ export default function HostSetup() {
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: 12, marginTop: 14 }} role="radiogroup" aria-label="Spelläge">
           {(
             [
-              { id: "jakt", name: "Biljakt", tag: "Kör undan polisen i egen takt", text: "Varje elev kör en egen bil genom stan med polisen efter sig. När mätaren är full kommer en fråga – rätt svar ger en stjärna. Flest stjärnor vinner.", time: "5–12 min" },
+              { id: "jakt", name: "Biljakt", tag: "Kör undan polisen i egen takt", text: "Varje elev kör en egen bil genom stan med polisen efter sig. Full mätare ger en fråga – rätt svar ger en stjärna som höjer poängmultiplikatorn. Flest poäng vinner.", time: "5–12 min" },
               { id: "fjall", name: "Fjällförsvar", tag: "Tower defense i egen takt", text: "Varje elev försvarar sin stuga mot troll. Rätt svar ger virke att bygga torn för. Trollen väntar inte – man måste både kunna och spela.", time: "5–12 min" },
               { id: "topptur", name: "Topptur", tag: "Gemensamma frågor på tavlan", text: "Alla svarar på samma fråga samtidigt och klättrar mot toppen. Du styr tempot och kan pausa för att prata om svaren.", time: `ca ${estimateMinutes(quiz)} min` },
             ] as { id: GameMode; name: string; tag: string; text: string; time: string }[]
@@ -166,7 +166,7 @@ export default function HostSetup() {
                   {e.tagline}
                 </div>
                 <ul style={{ margin: "12px 0 0", padding: 0, listStyle: "none", display: "grid", gap: 6, fontSize: "0.9rem" }}>
-                  {e.points.map((p) => (
+                  {(MODE_POINTS[mode]?.[k] ?? e.points).map((p) => (
                     <li key={p} className="row gap-8" style={{ alignItems: "flex-start" }}>
                       <Icon name="check" size={15} stroke={3} style={{ color: "var(--brand)", marginTop: 3 }} />
                       {p}
@@ -187,7 +187,7 @@ export default function HostSetup() {
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: 16, marginTop: 24 }}>
         <section className="card card-pad">
           <h2 style={{ fontSize: "1.1rem", marginBottom: 6 }}>Inställningar</h2>
-          <Toggle checked={longer} onChange={setLonger} title="Längre betänketid" text="+50 % tid på varje fråga. Bra för nya begrepp eller elever som läser långsammare." />
+          {mode === "topptur" && <Toggle checked={longer} onChange={setLonger} title="Längre betänketid" text="+50 % tid på varje fråga. Bra för nya begrepp eller elever som läser långsammare." />}
           <Toggle checked={randomNames} onChange={setRandomNames} title="Slumpade namn" text="Eleverna får namn som ”Klok Kotte”. Stoppar olämpliga smeknamn." />
         </section>
         <section className="card card-pad">
@@ -195,7 +195,7 @@ export default function HostSetup() {
           <p className="muted" style={{ fontSize: "0.9rem", marginTop: 2 }}>
             Resultatet sparas på klassen så att du kan följa utvecklingen.
           </p>
-          <div className="stack gap-8" style={{ marginTop: 12 }} role="radiogroup" aria-label="Klass">
+          <div className="stack gap-8" style={{ marginTop: 12, maxHeight: 280, overflowY: "auto" }} role="radiogroup" aria-label="Klass">
             {CLASSES.map((c) => (
               <label key={c.id} className="row gap-12" style={{ padding: "10px 12px", borderRadius: 14, border: `2px solid ${cls === c.id ? "var(--brand)" : "var(--line)"}`, background: cls === c.id ? "var(--brand-tint)" : "var(--card)", cursor: "pointer" }}>
                 <input type="radio" name="klass" checked={cls === c.id} onChange={() => setCls(c.id)} style={{ accentColor: "var(--brand)", width: 18, height: 18 }} />
@@ -208,6 +208,9 @@ export default function HostSetup() {
               </label>
             ))}
           </div>
+          <Link href="/larare/klasser?ny=1" className="btn btn-sm btn-ghost" style={{ marginTop: 10 }}>
+            <Icon name="plus" size={16} /> Skapa klass
+          </Link>
         </section>
       </div>
 
@@ -227,6 +230,20 @@ export default function HostSetup() {
     </main>
   );
 }
+
+/** Vad energinivån betyder i lägena i egen takt (Topptur använder ENERGY.points). */
+const MODE_POINTS: Partial<Record<GameMode, Record<Energy, string[]>>> = {
+  jakt: {
+    lugn: ["Färre och långsammare poliser", "Polisen skjuter först vid höga nivåer", "Ingen topplista på projektorn", "Lugnare tempo"],
+    standard: ["Polisen blir fler med dina stjärnor", "Skjuter från två stjärnor", "Topplistan visas på projektorn", "Eleven ser sin placering"],
+    fullfart: ["Fler och snabbare poliser", "Polisen skjuter från första stjärnan", "Kortare tid mellan frågorna", "Topplista och placering"],
+  },
+  fjall: {
+    lugn: ["Ingen topplista på projektorn", "Projektorn visar klassens stugor", "Eleven fokuserar på sitt försvar", "Pallen visar tre namn"],
+    standard: ["Starkaste försvaren på projektorn", "Topp 5 visas under matchen", "Pallen visar fem namn", "Rekommenderas för de flesta"],
+    fullfart: ["Mest tävling", "Topp 5 visas under matchen", "Pallen visar fem namn", "Passar fredagar"],
+  },
+};
 
 function Toggle({ checked, onChange, title, text }: { checked: boolean; onChange: (v: boolean) => void; title: string; text: string }) {
 return (

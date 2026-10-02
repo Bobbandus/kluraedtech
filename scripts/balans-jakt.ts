@@ -51,8 +51,8 @@ for (const ty of TYPES) {
       }
       step(s, DT);
     }
-    stars += s.stars;
+    stars += s.score;
     busts += s.busts;
   }
-  console.log(`${ty.id.padEnd(28)} stjärnor ${(stars / RUNS).toFixed(1).padStart(5)}   frågor ${(qs / RUNS).toFixed(1).padStart(5)}   fast ${(busts / RUNS).toFixed(1).padStart(4)}`);
+  console.log(`${ty.id.padEnd(28)} poäng ${(stars / RUNS).toFixed(0).padStart(6)}   frågor ${(qs / RUNS).toFixed(1).padStart(5)}   fast ${(busts / RUNS).toFixed(1).padStart(4)}`);
 }

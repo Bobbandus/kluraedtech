@@ -7,7 +7,7 @@ import { Avatar } from "@/components/avatar";
 import { Icon } from "@/components/icons";
 import { LineChart, Sparkline, Trend } from "@/components/charts";
 import { AccuracyRing } from "@/components/teacher-ui";
-import { useHydrated, useStore } from "@/lib/store";
+import { useHydrated, useStore, useClasses } from "@/lib/store";
 import { useSessions } from "@/lib/quizzes";
 import { classesFrom, recurringWeak, repetitionQuiz, studentTrends } from "@/lib/classes";
 import { classAccuracy, formatDate, pct } from "@/lib/results";
@@ -20,8 +20,9 @@ export default function ClassDetail() {
   const sessions = useSessions();
   const save = useStore((x) => x.saveQuiz);
   const [showStudents, setShowStudents] = useState(false);
+  const allClasses = useClasses();
   if (!hydrated) return <main className="page" />;
-  const stats = classesFrom(sessions).find((c) => c.cls.id === id);
+  const stats = classesFrom(sessions, allClasses).find((c) => c.cls.id === id);
   if (!stats) {
     return (
       <main className="page" style={{ textAlign: "center" }}>

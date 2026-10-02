@@ -160,7 +160,7 @@ export default function Home() {
               <div className={s.modeBody}>
                 <span className={s.modeTag}>Nytt · I egen takt</span>
                 <h3>Biljakt</h3>
-                <p>Kör undan polisen genom stan. När mätaren är full kommer en fråga – rätt svar ger en stjärna. Flest stjärnor vinner.</p>
+                <p>Kör undan polisen genom stan, byt bil som spöke och skaka av dig jakten. Rätt svar ger stjärnor som multiplicerar dina poäng.</p>
               </div>
             </article>
             <article className={s.mode}>

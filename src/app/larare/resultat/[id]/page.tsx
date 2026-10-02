@@ -270,7 +270,7 @@ export default function ResultDetail() {
                 <th style={{ padding: "8px 6px" }}>Elev</th>
                 <th style={{ padding: "8px 6px" }}>Rätt</th>
                 <th style={{ padding: "8px 6px" }}>Längsta rad</th>
-                <th style={{ padding: "8px 6px", textAlign: "right" }}>{r.mode === "jakt" ? "Stjärnor" : r.mode === "fjall" ? "Poäng" : "Höjd"}</th>
+                <th style={{ padding: "8px 6px", textAlign: "right" }}>{r.mode === "jakt" || r.mode === "fjall" ? "Poäng" : "Höjd"}</th>
               </tr>
             </thead>
             <tbody>
@@ -286,7 +286,7 @@ export default function ResultDetail() {
                     {p.correct}/{p.answered || r.questions.length} <span className="muted">({pct(playerAccuracy(p, r.questions.length))})</span>
                   </td>
                   <td style={{ padding: "8px 6px" }}>{p.bestStreak}</td>
-                  <td style={{ padding: "8px 6px", textAlign: "right", fontVariantNumeric: "tabular-nums" }}>{r.mode === "jakt" ? `★ ${p.score}` : r.mode === "fjall" ? p.score.toLocaleString("sv-SE") : `${p.score.toLocaleString("sv-SE")} m`}</td>
+                  <td style={{ padding: "8px 6px", textAlign: "right", fontVariantNumeric: "tabular-nums" }}>{r.mode === "jakt" || r.mode === "fjall" ? p.score.toLocaleString("sv-SE") : `${p.score.toLocaleString("sv-SE")} m`}</td>
                 </tr>
               ))}
             </tbody>

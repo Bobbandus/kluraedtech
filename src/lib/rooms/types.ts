@@ -141,7 +141,7 @@ export interface PlayerView {
   serverNow: number;
   paused: boolean;
   autoHost: boolean;
-  you: { id: string; name: string; skinId: string; score: number; streak: number; correct: number; answered: number; jokerUsed: boolean };
+  you: { id: string; name: string; skinId: string; score: number; streak: number; correct: number; answered: number; jokerUsed: boolean; rank?: number };
   lobby: LobbyPlayer[];
   playerCount: number;
   // Topptur

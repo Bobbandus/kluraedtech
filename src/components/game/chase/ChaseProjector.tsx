@@ -8,6 +8,8 @@ import { drawCar } from "./sprites";
 import { drawCityFull } from "./render";
 import s from "./projector.module.css";
 
+const MEDAL = ["#f2c230", "#c9d1d6", "#c8834e"];
+
 type Pos = { x: number; y: number; a: number; tx: number; ty: number; ta: number };
 
 /**
@@ -63,8 +65,12 @@ export default function ChaseProjector({ view, remaining, joinText }: { view: Ho
       ctx.restore();
 
       const order = ranked(v.players);
+      const rankOf = new Map(order.map((p, i) => [p.id, i + 1]));
       const top = new Set(order.slice(0, 3).map((p) => p.id));
-      v.players.forEach((p, i) => {
+      // Ritas i omvänd ordning så att ettan hamnar överst
+      [...v.players].sort((a, b) => (rankOf.get(b.id) ?? 99) - (rankOf.get(a.id) ?? 99)).forEach((p) => {
+        const i = v.players.indexOf(p);
+        const rk = rankOf.get(p.id) ?? 99;
         if (p.x === undefined || p.y === undefined) return;
         const tx = p.x * city.w;
         const ty = p.y * city.h;
@@ -98,22 +104,47 @@ export default function ChaseProjector({ view, remaining, joinText }: { view: Ho
         ctx.save();
         ctx.translate(sx, sy);
         ctx.scale(carScale, carScale);
-        drawCar(ctx, 0, 0, q.a, "sport", CAR_COLORS[i % CAR_COLORS.length], Math.min(3, carScale * dpr * 1.5));
+        // Topp 3 kör i guld, silver och brons
+        const color = !lugn && rk <= 3 ? MEDAL[rk - 1] : CAR_COLORS[i % CAR_COLORS.length];
+        if (!lugn && rk <= 3) {
+          const glow = ctx.createRadialGradient(0, 0, 4, 0, 0, 44);
+          glow.addColorStop(0, `${color}88`);
+          glow.addColorStop(1, `${color}00`);
+          ctx.fillStyle = glow;
+          ctx.beginPath();
+          ctx.arc(0, 0, 44, 0, Math.PI * 2);
+          ctx.fill();
+        }
+        drawCar(ctx, 0, 0, q.a, "sport", color, Math.min(3, carScale * dpr * 1.5));
         ctx.restore();
         const showName = !lugn || top.has(p.id);
         if (showName && v.players.length <= 32) {
           ctx.font = `800 ${Math.round(13 * Math.max(0.9, carScale))}px Nunito, system-ui, sans-serif`;
-          const label = top.has(p.id) && !lugn ? `${p.name} · ${p.stars ?? 0}` : p.name;
-          const w = ctx.measureText(label).width + 14;
+          const medal = top.has(p.id) && !lugn;
+          const label = p.name;
+          const w = ctx.measureText(label).width + (medal ? 34 : 14);
           const ly = sy - 30 * carScale;
-          ctx.fillStyle = top.has(p.id) && !lugn ? "#ffd65a" : "rgba(255,255,255,0.92)";
+          ctx.fillStyle = "rgba(255,255,255,0.95)";
           ctx.beginPath();
           ctx.roundRect(sx - w / 2, ly - 11, w, 22, 11);
           ctx.fill();
+          if (medal) {
+            ctx.fillStyle = MEDAL[rk - 1];
+            ctx.beginPath();
+            ctx.arc(sx - w / 2 + 11, ly, 9, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.strokeStyle = "rgba(0,0,0,0.25)";
+            ctx.lineWidth = 1.5;
+            ctx.stroke();
+            ctx.fillStyle = "#1d2326";
+            ctx.textAlign = "center";
+            ctx.textBaseline = "middle";
+            ctx.fillText(String(rk), sx - w / 2 + 11, ly + 0.5);
+          }
           ctx.fillStyle = "#1d2326";
           ctx.textAlign = "center";
           ctx.textBaseline = "middle";
-          ctx.fillText(label, sx, ly + 0.5);
+          ctx.fillText(label, sx + (medal ? 10 : 0), ly + 0.5);
         }
       });
       raf = requestAnimationFrame(loop);
@@ -139,7 +170,7 @@ export default function ChaseProjector({ view, remaining, joinText }: { view: Ho
       </div>
       <aside className={s.board} aria-label={lugn ? "Klassens stjärnor" : "Flest stjärnor"}>
         <div className={s.boardHead}>
-          <StarIcon /> {lugn ? "Klassen tillsammans" : "Flest stjärnor"}
+          <StarIcon /> {lugn ? "Klassen tillsammans" : "Flest poäng"}
         </div>
         {lugn ? (
           <div className={s.classTotal}>
@@ -150,9 +181,10 @@ export default function ChaseProjector({ view, remaining, joinText }: { view: Ho
           <ol className={s.list}>
             {order.slice(0, 8).map((p, i) => (
               <li key={p.id} className={i < 3 ? s.podium : ""}>
-                <span className={s.rank}>{i + 1}</span>
+                <span className={`${s.rank} ${i === 0 ? s.gold : i === 1 ? s.silver : i === 2 ? s.bronze : ""}`}>{i + 1}</span>
                 <span className={s.name}>{p.name}</span>
-                <span className={s.stars}>{p.stars ?? 0}</span>
+                <span className={s.mult}>×{(1 + (p.stars ?? 0) * 0.5).toLocaleString("sv-SE")}</span>
+                <span className={s.points}>{p.score.toLocaleString("sv-SE")}</span>
               </li>
             ))}
           </ol>
