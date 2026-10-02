@@ -543,6 +543,9 @@ export interface Car {
   stuck: number;
   reverse: number;
   fireCd: number;
+  /** Polis: konstapeln är ute ur bilen / tid tills hen får kliva ur igen */
+  out?: boolean;
+  exitCd?: number;
   /** Polis: egen sökpunkt när spåret är tappat */
   search?: { x: number; y: number; t: number };
   id: number;
@@ -606,7 +609,7 @@ export type BodyMode = "car" | "foot" | "ghost";
 
 export interface ChaseEvent {
   t: number;
-  kind: "crash" | "busted" | "respawn" | "star" | "miss" | "spawn" | "nearmiss" | "boost" | "shot" | "hit" | "escape" | "ghost" | "possess" | "exit" | "enter" | "wreck" | "spotted";
+  kind: "crash" | "busted" | "respawn" | "star" | "miss" | "spawn" | "nearmiss" | "boost" | "shot" | "hit" | "escape" | "ghost" | "possess" | "exit" | "enter" | "wreck" | "spotted" | "officer" | "knock";
   x: number;
   y: number;
   power: number;
@@ -620,6 +623,25 @@ export interface ParkedCar {
   model: CarModel;
   color: string;
 }
+
+/** Polis till fots: kliver ur bilen, springer efter dig och skjuter. */
+export interface Officer {
+  id: number;
+  carId: number;
+  x: number;
+  y: number;
+  a: number;
+  vx: number;
+  vy: number;
+  fireCd: number;
+  /** Omkullkörd: ligger ner i några sekunder */
+  down: number;
+  /** På väg tillbaka till bilen */
+  returning: boolean;
+  outT: number;
+}
+
+export const OFFICER_SPEED = 170;
 
 export interface Bullet {
   x: number;
@@ -649,6 +671,7 @@ export interface ChaseState {
   parked: ParkedCar[];
   bullets: Bullet[];
   police: Car[];
+  officers: Officer[];
   stars: number;
   bestStars: number;
   score: number;
@@ -715,6 +738,7 @@ export function createChase(seed: number, energy: Energy = "standard", citySeed 
     parked: city.parked.map((p) => ({ ...p, id: 1000 + nextId++ })),
     bullets: [],
     police: [],
+    officers: [],
     stars: 0,
     bestStars: 0,
     score: 0,
@@ -1067,6 +1091,16 @@ function policeTarget(s: ChaseState, p: Car): [number, number] {
 }
 
 function drivePolice(s: ChaseState, p: Car, dt: number): number {
+  p.exitCd = Math.max(0, (p.exitCd ?? 0) - dt);
+  if (p.out) {
+    // Bilen står still med blåljusen på medan konstapeln är ute
+    p.vx *= Math.exp(-dt * 6);
+    p.vy *= Math.exp(-dt * 6);
+    p.x += p.vx * dt;
+    p.y += p.vy * dt;
+    p.braking = true;
+    return collideWorld(s, p, CAR_RADIUS);
+  }
   const spec = policeSpec(s.stars, s.tuning, playerSpec(s).vmax);
   if (s.lost) spec.vmax *= 0.75; // söker lugnare
   const [tx, ty] = policeTarget(s, p);
@@ -1271,6 +1305,8 @@ export function step(s: ChaseState, realDt: number) {
   // Ser polisen dig?
   let seen = false;
   for (const p of s.police) if (sees(s, p)) seen = true;
+  if (s.mode !== "ghost")
+    for (const o of s.officers) if (o.down <= 0 && Math.hypot(o.x - me.x, o.y - me.y) < 360 && lineClear(s.city, o.x, o.y, me.x, me.y)) seen = true;
   if (seen) {
     if (s.lost) s.events.push({ t: s.t, kind: "spotted", x: me.x, y: me.y, power: 1 });
     s.lost = false;
@@ -1281,22 +1317,84 @@ export function step(s: ChaseState, realDt: number) {
     if (s.unseen >= LOSE_TIME) loseTrack(s);
   }
 
-  // Polisen skjuter
-  if (!s.lost && s.mode !== "ghost" && s.invuln <= 0 && !asking) {
-    const canShoot = s.mode === "foot" || s.stars >= s.tuning.shootFrom;
+  // Poliser kliver ur när de är nära och du står still, går till fots – eller när de får skjuta
+  const mySpeed = Math.hypot(me.vx, me.vy);
+  const armed = s.mode === "foot" || s.stars >= s.tuning.shootFrom;
+  if (!s.lost && s.mode !== "ghost" && !asking) {
     for (const p of s.police) {
-      p.fireCd -= dt;
-      if (!canShoot || p.fireCd > 0) continue;
+      if (p.out || (p.exitCd ?? 0) > 0 || s.officers.length >= 4) continue;
       const d = Math.hypot(me.x - p.x, me.y - p.y);
-      if (d > 460 || !lineClear(s.city, p.x, p.y, me.x, me.y)) continue;
-      // Siktar dit du var nyss (ingen perfekt förutsägelse) – går att väja undan
-      const lead = (d / 760) * 0.5;
-      const aim = Math.atan2(me.y + me.vy * lead - p.y, me.x + me.vx * lead - p.x) + (s.rng() - 0.5) * 0.24;
-      s.bullets.push({ x: p.x + Math.cos(aim) * 22, y: p.y + Math.sin(aim) * 22, vx: Math.cos(aim) * 760, vy: Math.sin(aim) * 760, life: 0.75 });
-      s.events.push({ t: s.t, kind: "shot", x: p.x, y: p.y, power: aim });
-      p.fireCd = Math.max(0.6, 1.9 - s.stars * 0.08) + s.rng() * 0.6;
+      const carSlow = Math.hypot(p.vx, p.vy) < 140;
+      const reason = s.mode === "foot" || mySpeed < 90 || armed;
+      if (d < 260 && carSlow && reason && lineClear(s.city, p.x, p.y, me.x, me.y)) {
+        p.out = true;
+        const side = p.a - Math.PI / 2;
+        const o: Officer = { id: s.nextId++, carId: p.id, x: p.x + Math.cos(side) * 24, y: p.y + Math.sin(side) * 24, a: Math.atan2(me.y - p.y, me.x - p.x), vx: 0, vy: 0, fireCd: 0.8 + s.rng() * 0.6, down: 0, returning: false, outT: 0 };
+        collideWorld(s, o, FOOT_RADIUS);
+        s.officers.push(o);
+        s.events.push({ t: s.t, kind: "officer", x: o.x, y: o.y, power: 1 });
+      }
     }
   }
+  for (const o of s.officers) {
+    const car = s.police.find((c) => c.id === o.carId);
+    o.outT += dt;
+    if (o.down > 0) {
+      o.down -= dt;
+      o.vx = o.vy = 0;
+      continue;
+    }
+    const d = Math.hypot(me.x - o.x, me.y - o.y);
+    const see = s.mode !== "ghost" && !s.lost && (d < 150 || (d < 420 && lineClear(s.city, o.x, o.y, me.x, me.y)));
+    // Tillbaka till bilen om du kommit undan eller sticker iväg
+    if (!o.returning && (s.lost || d > 520 || (o.outT > 6 && !see) || s.mode === "ghost")) o.returning = true;
+    if (o.returning && see && d < 300 && s.mode === "foot") o.returning = false;
+    let tx = me.x;
+    let ty = me.y;
+    if (o.returning && car) {
+      tx = car.x;
+      ty = car.y;
+    }
+    const want = Math.atan2(ty - o.y, tx - o.x);
+    o.a += wrap(want - o.a) * Math.min(1, dt * 8);
+    // Stannar och siktar när hen har fri sikt och är på skjutavstånd
+    const aiming = !o.returning && see && armed && d < 360;
+    const sp = aiming ? 30 : OFFICER_SPEED;
+    o.vx = Math.cos(o.a) * sp;
+    o.vy = Math.sin(o.a) * sp;
+    o.x += o.vx * dt;
+    o.y += o.vy * dt;
+    collideWorld(s, o, FOOT_RADIUS);
+    if (o.returning && car && Math.hypot(car.x - o.x, car.y - o.y) < 26) {
+      car.out = false;
+      car.exitCd = 4;
+      o.down = -1; // markeras för borttagning
+      continue;
+    }
+    if (!car) o.down = -1;
+    // Skjuter
+    o.fireCd -= dt;
+    if (aiming && o.fireCd <= 0 && s.invuln <= 0) {
+      const lead = (d / 760) * 0.4;
+      const aim = Math.atan2(me.y + me.vy * lead - o.y, me.x + me.vx * lead - o.x) + (s.rng() - 0.5) * 0.22;
+      s.bullets.push({ x: o.x + Math.cos(aim) * 14, y: o.y + Math.sin(aim) * 14, vx: Math.cos(aim) * 760, vy: Math.sin(aim) * 760, life: 0.7 });
+      s.events.push({ t: s.t, kind: "shot", x: o.x, y: o.y, power: aim });
+      o.a = aim;
+      o.fireCd = Math.max(0.55, 1.5 - s.stars * 0.07) + s.rng() * 0.5;
+    }
+    // Griper dig till fots
+    if (s.mode === "foot" && s.invuln <= 0 && d < FOOT_RADIUS * 2 + 6) return bust(s, false);
+    // Påkörd av din bil: ramlar omkull en stund
+    if (s.mode === "car" && Math.hypot(pl.x - o.x, pl.y - o.y) < CAR_RADIUS + FOOT_RADIUS && mySpeed > 90) {
+      o.down = 3;
+      const k = Math.atan2(o.y - pl.y, o.x - pl.x);
+      o.x += Math.cos(k) * 16;
+      o.y += Math.sin(k) * 16;
+      collideWorld(s, o, FOOT_RADIUS);
+      s.events.push({ t: s.t, kind: "knock", x: o.x, y: o.y, power: 1 });
+    }
+  }
+  s.officers = s.officers.filter((o) => o.down !== -1);
   // Kulor
   for (const b of s.bullets) {
     b.life -= dt;
@@ -1393,6 +1491,7 @@ function respawn(s: ChaseState) {
   // Polisen startar om på avstånd
   const n = s.police.length;
   s.police = [];
+  s.officers = [];
   for (let i = 0; i < n; i++) {
     const p = spawnPoint(s, 900, 1500);
     s.police.push(mkCar(s.nextId++, p.x, p.y, p.a, "polis", "#ffffff"));

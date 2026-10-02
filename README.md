@@ -4,7 +4,7 @@ Ett svenskt multiplayer-quiz för klassrummet där kunskap är den viktigaste sk
 
 **Spellägen**
 
-- **Biljakt** – kör undan polisen i egen takt. Varje elev styr en egen bil genom en stad sedd uppifrån. När mätaren är full kommer en fråga i slowmotion. Rätt svar ger en stjärna, och stjärnorna är en poängmultiplikator (×1,5, ×2 …). Man kan kliva ur bilen, bli spöke och ta över en annan bil, och skaka av sig polisen genom att hålla sig utom synhåll. Polisen jagar, genskjuter och skjuter vid högre nivåer. Blir man fast tappar man en stjärna. Flest poäng vinner. Projektorn visar hela staden och topplistan med topp 3 i guld, silver och brons.
+- **Biljakt** – kör undan polisen i egen takt. Varje elev styr en egen bil genom en stad sedd uppifrån. När mätaren är full kommer en fråga i slowmotion. Rätt svar ger en stjärna, och stjärnorna är en poängmultiplikator (×1,5, ×2 …). Man kan kliva ur bilen, bli spöke och ta över en annan bil, och skaka av sig polisen genom att hålla sig utom synhåll. Polisen jagar och genskjuter, och vid högre nivåer kliver poliserna ur bilarna och skjuter. Blir man fast tappar man en stjärna. Flest poäng vinner. Projektorn visar hela staden och topplistan med topp 3 i guld, silver och brons.
 - **Fjällförsvar** – tower defense i egen takt. Varje elev försvarar sin stuga mot troll. Rätt svar ger virke, virket blir torn. Trollen går hela tiden, så man måste både kunna svaren och spela. Fel svar spärrar en kort stund och visar förklaringen.
 - **Topptur** – hela klassen svarar på samma fråga på tavlan och klättrar mot toppen. En Joker per match tar bort två fel svar.
 

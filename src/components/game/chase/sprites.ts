@@ -745,56 +745,157 @@ export function drawLamp(ctx: Ctx, x: number, y: number) {
 
 /* ---------- Till fots och spöke ---------- */
 
-/** Person ovanifrån: axlar, huvud och armar som pendlar när hen går. */
-export function drawPerson(ctx: Ctx, x: number, y: number, a: number, color: string, time: number, walking: boolean, alpha = 1) {
+export interface PersonLook {
+  /** Jacka/tröja */
+  top: string;
+  hair?: string;
+  skin?: string;
+  /** Polis: gul reflexväst och skärmmössa */
+  police?: boolean;
+}
+
+/**
+ * Person ovanifrån i samma tecknade stil som bilarna: skugga, ben som går,
+ * axlar med ljus från vänster, armar som pendlar och huvud med frisyr.
+ */
+export function drawPerson(ctx: Ctx, x: number, y: number, a: number, look: PersonLook, time: number, walking: boolean, alpha = 1, opts: { down?: boolean; ring?: boolean; aiming?: boolean } = {}) {
   ctx.save();
   ctx.globalAlpha = alpha;
-  // Markering så att man ser sig själv
-  ctx.strokeStyle = "rgba(255,255,255,0.85)";
-  ctx.lineWidth = 2.5;
+  if (opts.ring) {
+    ctx.strokeStyle = "rgba(255,255,255,0.85)";
+    ctx.lineWidth = 2.5;
+    ctx.beginPath();
+    ctx.arc(x, y, 24 + Math.sin(time * 5) * 1.5, 0, Math.PI * 2);
+    ctx.stroke();
+  }
+  // Skugga
+  ctx.fillStyle = "rgba(10,18,20,0.28)";
   ctx.beginPath();
-  ctx.arc(x, y, 22 + Math.sin(time * 5) * 1.5, 0, Math.PI * 2);
-  ctx.stroke();
-  ctx.translate(x, y);
-  ctx.scale(1.5, 1.5);
-  ctx.translate(-x, -y);
-  ctx.fillStyle = "rgba(10,18,20,0.3)";
-  ctx.beginPath();
-  ctx.ellipse(x + 3, y + 4, 10, 8, 0, 0, Math.PI * 2);
+  ctx.ellipse(x + 4, y + 5, 15, 11, 0, 0, Math.PI * 2);
   ctx.fill();
   ctx.translate(x, y);
-  ctx.rotate(a);
-  const swing = walking ? Math.sin(time * 12) * 4 : 0;
-  // Fötter
-  ctx.fillStyle = "#2a2f33";
+  ctx.rotate(a + (opts.down ? Math.PI / 2 : 0));
+  const S = 1.45;
+  ctx.scale(S, S);
+  const skin = look.skin ?? "#f1c7a1";
+  const swing = walking && !opts.down ? Math.sin(time * 11) * 4.2 : 0;
+  if (opts.down) {
+    // Liggande: hela kroppen syns, ben utsträckta
+    ctx.fillStyle = "#2c3238";
+    ctx.beginPath();
+    ctx.roundRect(-14, -5.5, 10, 4.5, 2);
+    ctx.roundRect(-14, 1, 10, 4.5, 2);
+    ctx.fill();
+  }
+  // Ben och skor
+  ctx.fillStyle = look.police ? "#1d2c4a" : "#33404a";
   ctx.beginPath();
-  ctx.ellipse(swing, -4, 4, 2.6, 0, 0, Math.PI * 2);
-  ctx.ellipse(-swing, 4, 4, 2.6, 0, 0, Math.PI * 2);
+  ctx.roundRect(-3 + swing, -5.4, 6.5, 3.8, 1.9);
+  ctx.roundRect(-3 - swing, 1.6, 6.5, 3.8, 1.9);
   ctx.fill();
-  // Axlar/jacka
-  ctx.fillStyle = color;
-  ctx.strokeStyle = INK;
-  ctx.lineWidth = 1.4;
+  ctx.fillStyle = "#16191b";
   ctx.beginPath();
-  ctx.ellipse(-1, 0, 5.5, 9, 0, 0, Math.PI * 2);
+  ctx.ellipse(3.6 + swing, -3.5, 2.2, 1.9, 0, 0, Math.PI * 2);
+  ctx.ellipse(3.6 - swing, 3.5, 2.2, 1.9, 0, 0, Math.PI * 2);
+  ctx.fill();
+  // Armar längs sidorna – pendlar i otakt med benen. Höger arm sträcks fram när polisen siktar.
+  const top = look.police ? "#1f3a6e" : look.top;
+  for (const [sy, sw] of [
+    [-1, -swing],
+    [1, swing],
+  ] as [number, number][]) {
+    const aim = opts.aiming && sy > 0;
+    const x0 = aim ? -1 : -4 + sw * 0.8;
+    const len = aim ? 13 : 7.5;
+    const yy = aim ? sy * 5.5 : sy * 8.6;
+    ctx.fillStyle = shade(top, -0.08);
+    ctx.strokeStyle = "rgba(16,20,22,0.85)";
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.roundRect(x0, yy - 2.3, len, 4.6, 2.3);
+    ctx.fill();
+    ctx.stroke();
+    ctx.fillStyle = skin;
+    ctx.beginPath();
+    ctx.arc(x0 + len, yy, 2.1, 0, Math.PI * 2);
+    ctx.fill();
+    if (aim) {
+      ctx.fillStyle = "#1b1e21";
+      ctx.fillRect(x0 + len, yy - 1.2, 5, 2.4);
+    }
+  }
+  // Överkropp
+  const g = ctx.createLinearGradient(0, -8, 0, 8);
+  g.addColorStop(0, shade(top, 0.25));
+  g.addColorStop(1, shade(top, -0.18));
+  ctx.fillStyle = g;
+  ctx.strokeStyle = "rgba(16,20,22,0.9)";
+  ctx.lineWidth = 1.2;
+  ctx.beginPath();
+  ctx.ellipse(-0.5, 0, 5.5, 9.2, 0, 0, Math.PI * 2);
   ctx.fill();
   ctx.stroke();
-  // Armar
-  ctx.beginPath();
-  ctx.ellipse(-swing * 0.6, -8.5, 3.5, 2.6, 0, 0, Math.PI * 2);
-  ctx.ellipse(swing * 0.6, 8.5, 3.5, 2.6, 0, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.stroke();
+  if (look.police) {
+    // Reflexväst med band
+    ctx.fillStyle = "#e3ec3f";
+    ctx.beginPath();
+    ctx.ellipse(-0.8, 0, 4.4, 8, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = "#cfd5d9";
+    ctx.fillRect(-3.4, -7.4, 1.4, 14.8);
+    ctx.fillStyle = "#1f3a6e";
+    ctx.font = "900 3.2px system-ui, sans-serif";
+    ctx.save();
+    ctx.rotate(Math.PI / 2);
+    ctx.textAlign = "center";
+    ctx.fillText("POLIS", 0, 2.4);
+    ctx.restore();
+  }
   // Huvud
-  ctx.fillStyle = "#f2c9a0";
+  ctx.fillStyle = skin;
+  ctx.strokeStyle = "rgba(16,20,22,0.85)";
+  ctx.lineWidth = 1;
   ctx.beginPath();
-  ctx.arc(1, 0, 4.6, 0, Math.PI * 2);
+  ctx.arc(0.5, 0, 4.4, 0, Math.PI * 2);
   ctx.fill();
   ctx.stroke();
-  ctx.fillStyle = "#4a3426";
-  ctx.beginPath();
-  ctx.arc(-0.5, 0, 4.2, Math.PI * 0.55, Math.PI * 1.45);
-  ctx.fill();
+  if (look.police) {
+    // Skärmmössa
+    ctx.fillStyle = "#14254a";
+    ctx.beginPath();
+    ctx.arc(0, 0, 4.6, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = "#0e1a35";
+    ctx.beginPath();
+    ctx.ellipse(4.2, 0, 2.2, 3.8, 0, -Math.PI / 2, Math.PI / 2);
+    ctx.fill();
+    ctx.fillStyle = "#f2c230";
+    ctx.beginPath();
+    ctx.arc(1.8, 0, 1.1, 0, Math.PI * 2);
+    ctx.fill();
+  } else {
+    // Hår (bakhuvud) med glans
+    ctx.fillStyle = look.hair ?? "#5a3a24";
+    ctx.beginPath();
+    ctx.arc(-0.4, 0, 4.4, Math.PI * 0.5, Math.PI * 1.5);
+    ctx.quadraticCurveTo(2.5, -4.6, 2.2, 0);
+    ctx.quadraticCurveTo(2.5, 4.6, -0.4, 4.4);
+    ctx.fill();
+    ctx.fillStyle = "rgba(255,255,255,0.25)";
+    ctx.beginPath();
+    ctx.ellipse(-1.6, -1.6, 1.4, 0.8, -0.5, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  if (opts.down) {
+    // Snurrande stjärnor
+    for (let i = 0; i < 3; i++) {
+      const t = time * 4 + (i * Math.PI * 2) / 3;
+      ctx.fillStyle = "#ffd65a";
+      ctx.beginPath();
+      ctx.arc(Math.cos(t) * 8, Math.sin(t) * 8, 1.4, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
   ctx.restore();
 }
 

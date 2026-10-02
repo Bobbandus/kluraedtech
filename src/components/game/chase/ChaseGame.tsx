@@ -121,6 +121,11 @@ export default function ChaseGame({ view, act, clockOffset }: { view: PlayerView
         else if (e.kind === "busted") sfx("busted");
         else if (e.kind === "ghost" || e.kind === "possess") sfx("ghost");
         else if (e.kind === "star") sfx("star");
+        else if (e.kind === "officer") sfx("click");
+        else if (e.kind === "knock") {
+          sfx("hit");
+          pop("Polisen ramlade!", "near");
+        }
       }
       if (g.events.length) lastEvent = g.events[g.events.length - 1].t;
       if (g.phase === "question" && !st.asking) setAsking(true);
@@ -278,7 +283,7 @@ export default function ChaseGame({ view, act, clockOffset }: { view: PlayerView
             </span>
           </div>
         )}
-        {g.mode === "foot" && <span className={`${s.chip} ${s.chipWarn}`}>Till fots – polisen skjuter! Hitta en bil</span>}
+        {g.mode === "foot" && <span className={`${s.chip} ${s.chipWarn}`}>Till fots – poliserna springer fortare än du. Hitta en bil!</span>}
         {g.mode === "ghost" && (
           <div className={s.hpWrap}>
             <span className={s.hpLabel}>Spöke</span>

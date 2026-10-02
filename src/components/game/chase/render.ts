@@ -715,12 +715,19 @@ export class ChaseRenderer {
       if (s.boost > 0) this.boostFlame(pl);
       drawCar(ctx, pl.x, pl.y, pl.a, pl.model, pl.color, scale, { steer: pl.steer, braking: pl.braking, alpha: blink });
     } else if (s.mode === "foot") {
-      drawPerson(ctx, me.x, me.y, me.a, pl.color, this.time, Math.hypot(me.vx, me.vy) > 10, blink);
+      drawPerson(ctx, me.x, me.y, me.a, { top: pl.color, hair: "#3b2a1e" }, this.time, Math.hypot(me.vx, me.vy) > 10, blink, { ring: true });
     } else {
       // Spöke: släpar glitter efter sig
       if (Math.random() < 0.6)
         this.particles.push({ x: me.x + (Math.random() - 0.5) * 16, y: me.y + (Math.random() - 0.5) * 16, vx: 0, vy: 0, life: 0.6, max: 0.6, size: 3, kind: "speck", color: "#d9c8ff" });
       drawGhost(ctx, me.x, me.y, me.a, this.time, s.ghostT / GHOST_TIME);
+    }
+
+    // Poliser till fots
+    for (const o of s.officers) {
+      if (Math.abs(o.x - camX) > vw / 2 + 40 || Math.abs(o.y - camY) > vh / 2 + 40) continue;
+      const moving = Math.hypot(o.vx, o.vy) > 40;
+      drawPerson(ctx, o.x, o.y, o.a, { top: "#1f3a6e", police: true }, this.time + o.id, moving, 1, { down: o.down > 0, aiming: !moving && o.down <= 0 });
     }
 
     // Kulor
