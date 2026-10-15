@@ -19,7 +19,7 @@ import SlalomPreview from "@/components/game/slalom/SlalomPreview";
 import { MountainScene } from "@/components/scene";
 import s from "./admin.module.css";
 
-const SHOW_QUIZZES = ["manskliga-rattigheter", "demokrati-diktatur", "lag-och-ratt", "syslojd", "stormaktstiden", "kroppen", "procent", "vikingatiden", "periodiska", "sveriges-landskap", "demokrati", "irregular-verbs"];
+const SHOW_QUIZZES = ["manskliga-rattigheter", "demokrati-diktatur", "lag-och-ratt", "syslojd", "hallbar-utveckling", "varldsreligioner", "syror-baser", "geometri-area", "stormaktstiden", "kroppen", "procent", "vikingatiden", "periodiska", "sveriges-landskap", "demokrati", "irregular-verbs"];
 
 const MODES: { id: GameMode; text: string; quiz: string }[] = [
   { id: "jakt", text: "Eleven kör en egen bil genom stan med polisen efter sig. Rätt svar ger stjärnor som multiplicerar poängen.", quiz: "manskliga-rattigheter" },

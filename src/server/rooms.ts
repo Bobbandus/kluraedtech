@@ -62,7 +62,7 @@ export function sanitizeQuiz(raw: unknown): RoomQuiz | string {
     };
   });
   if (questions.some((x) => !x.text || x.options.length < 2 || x.options.some((o) => !o))) return "Alla frågor behöver text och minst två ifyllda alternativ.";
-  const subjects = ["historia", "matematik", "engelska", "biologi", "geografi", "kemi", "fysik", "svenska", "samhalle", "musik"];
+  const subjects = ["historia", "matematik", "engelska", "biologi", "geografi", "kemi", "fysik", "svenska", "samhalle", "musik", "slojd", "religion"];
   return { id: str(q.id, 80) || "quiz", title, subject: (subjects.includes(q.subject as string) ? q.subject : "historia") as RoomQuiz["subject"], questions };
 }
 

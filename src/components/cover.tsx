@@ -11,7 +11,8 @@ export type Subject =
   | "svenska"
   | "samhalle"
   | "musik"
-  | "slojd";
+  | "slojd"
+  | "religion";
 
 export const SUBJECTS: Record<Subject, { label: string; bg: string; fg: string }> = {
   historia: { label: "Historia", bg: "#f3dfc4", fg: "#8a4b1d" },
@@ -25,6 +26,7 @@ export const SUBJECTS: Record<Subject, { label: string; bg: string; fg: string }
   samhalle: { label: "Samhällskunskap", bg: "#f7e3d0", fg: "#8b4513" },
   musik: { label: "Musik", bg: "#f9dceb", fg: "#962d63" },
   slojd: { label: "Slöjd", bg: "#efe3d3", fg: "#7a5230" },
+  religion: { label: "Religion", bg: "#e4e1f7", fg: "#43399a" },
 };
 
 const MOTIF: Record<Subject, (fg: string) => ReactNode> = {
@@ -115,6 +117,15 @@ const MOTIF: Record<Subject, (fg: string) => ReactNode> = {
       <rect x="102" y="96" width="108" height="10" rx="3" fill={fg} opacity=".9" />
     </>
   ),
+  religion: (fg) => (
+    <>
+      <path d="M104 36c14-6 28-6 40 2v62c-12-8-26-8-40-2z" fill="#fff" />
+      <path d="M184 36c-14-6-28-6-40 2v62c12-8 26-8 40-2z" fill={fg} opacity=".85" />
+      <path d="M144 38v62" stroke={fg} strokeWidth="3" />
+      <rect x="196" y="58" width="12" height="40" rx="3" fill={fg} />
+      <path d="M202 38c6 7 6 13 0 16-6-3-6-9 0-16z" fill="#f2b705" />
+    </>
+  ),
   musik: (fg) => (
     <>
       <path d="M146 30l56-12v62" stroke={fg} strokeWidth="7" fill="none" strokeLinejoin="round" />
@@ -167,6 +178,32 @@ const EXTRA: Record<string, (fg: string) => ReactNode> = {
       <path d="M78 102V48h12v10h10V48h12v10h16V48h12v10h10V48h12v54z" fill={fg} />
       <path d="M110 102V80a10 10 0 0 1 20 0v22z" fill="#fff" />
       <path d="M120 48V22l22 7-22 7" fill="#fff" stroke={fg} strokeWidth="2" />
+    </>
+  ),
+  lov: (fg) => (
+    <>
+      <path d="M86 98c0-40 30-66 76-70 0 46-26 72-66 72" fill={fg} />
+      <path d="M92 96c18-22 36-40 60-56" stroke="#fff" strokeWidth="4" fill="none" strokeLinecap="round" />
+      <circle cx="170" cy="84" r="18" fill="#fff" />
+      <path d="M162 84a8 8 0 1 1 8 8M170 92l-5-3M170 92l-1-6" stroke={fg} strokeWidth="3" fill="none" strokeLinecap="round" />
+    </>
+  ),
+  ph: (fg) => (
+    <>
+      {["#e0483b", "#f08a2d", "#f2c230", "#5bb04f", "#2f8fbf", "#3a4fb0", "#6b3a9a"].map((c, i) => (
+        <rect key={i} x={64 + i * 16} y="70" width="16" height="22" fill={c} />
+      ))}
+      <rect x="64" y="70" width="112" height="22" rx="4" fill="none" stroke={fg} strokeWidth="3" />
+      <path d="M176 26h20M180 26v34l-12 22a6 6 0 0 0 5 9h26a6 6 0 0 0 5-9l-12-22V26" fill="#fff" stroke={fg} strokeWidth="3" strokeLinejoin="round" />
+      <path d="M172 78h40l4 8a4 4 0 0 1-4 5h-40a4 4 0 0 1-4-5z" fill={fg} opacity=".7" />
+    </>
+  ),
+  triangel: (fg) => (
+    <>
+      <path d="M78 100h84V36z" fill={fg} />
+      <path d="M150 100v-12h12" stroke="#fff" strokeWidth="3" fill="none" />
+      <rect x="168" y="44" width="40" height="40" rx="4" fill="#fff" stroke={fg} strokeWidth="3" />
+      <text x="188" y="70" textAnchor="middle" fontSize="14" fontWeight="900" fill={fg} fontFamily="system-ui">cm²</text>
     </>
   ),
   sag: (fg) => (
