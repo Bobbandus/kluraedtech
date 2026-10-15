@@ -66,7 +66,8 @@ export default function SlalomProjector({ view, remaining, joinText }: { view: H
       b.imageSmoothingEnabled = false;
       b.drawImage(bg, 0, 0);
       const order = ranked(v.players);
-      const lanes = order.slice(0, Math.min(order.length, 10));
+      // Lugnt läge: ingen rangordning – alla åker i sin egen takt
+      const lanes = (lugn ? v.players : order).slice(0, Math.min(v.players.length, 10));
       const top = Math.round(bh * 0.3);
       const bottom = bh - 10;
       const usable = bw * 0.78;
@@ -102,7 +103,7 @@ export default function SlalomProjector({ view, remaining, joinText }: { view: H
       const slots: { id: string; x: number; y: number; rk: number }[] = [];
       lanes.forEach((pl, i) => {
         const tx = left + i * laneW + laneW / 2;
-        const ty = top + 4 + (bottom - top - 20) * (pl.score / maxScore);
+        const ty = lugn ? top + (bottom - top) * (0.45 + Math.sin(time * 0.4 + i * 1.3) * 0.12) : top + 4 + (bottom - top - 20) * (pl.score / maxScore);
         let q = pos.get(pl.id);
         if (!q) {
           q = { x: tx, y: top };
@@ -138,6 +139,7 @@ export default function SlalomProjector({ view, remaining, joinText }: { view: H
       ctx.textBaseline = "middle";
       ctx.textAlign = "center";
       for (const sl of slots) {
+        if (lugn) break;
         const pl = v.players.find((x) => x.id === sl.id)!;
         const x = sl.x * PIX;
         // Varannan etikett lite högre så att grannarna inte krockar

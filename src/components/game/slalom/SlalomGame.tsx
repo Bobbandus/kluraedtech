@@ -87,7 +87,7 @@ export default function SlalomGame({ view, act, clockOffset }: { view: PlayerVie
       if (g.phase === "question" && !u.asking) setAsking(true);
       for (const e of g.events) {
         if (e.t <= lastSound) continue;
-        if (e.type === "gate") sfx(e.combo > 0 && e.combo % 5 === 0 ? "coin" : "click");
+        if (e.type === "gate") sfx(e.combo > 0 && e.combo % 5 === 0 ? "coin" : "gate");
         else if (e.type === "miss") sfx("leak");
         else if (e.type === "crash") sfx("crash");
         else if (e.type === "jump") sfx("ghost");

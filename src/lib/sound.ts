@@ -88,7 +88,8 @@ export type Sfx =
   | "bite"
   | "catch"
   | "bigcatch"
-  | "reel";
+  | "reel"
+  | "gate";
 
 /** Minsta tid mellan två likadana ljud (ms) så att det inte blir kakofoni. */
 const GAP: Partial<Record<Sfx, number>> = { reel: 70, kill: 70, hit: 90, shot: 80, crash: 160, coin: 60, leak: 200 };
@@ -176,6 +177,10 @@ export function sfx(name: Sfx) {
     case "bite":
       tone(660, 0.05, { type: "square", vol: 0.14 });
       tone(990, 0.08, { type: "square", vol: 0.14, at: 0.06 });
+      break;
+    case "gate":
+      noise(0.09, { freq: 3200, vol: 0.18, q: 0.7 });
+      tone(1760, 0.05, { type: "triangle", vol: 0.08, at: 0.03 });
       break;
     case "reel":
       tone(1500 + Math.random() * 300, 0.025, { type: "square", vol: 0.05 });
