@@ -9,6 +9,7 @@ import { MountainScene } from "@/components/scene";
 import { useStore } from "@/lib/store";
 import DefensePreview from "@/components/game/defense/DefensePreview";
 import FishPreview from "@/components/game/fishing/FishPreview";
+import SlalomPreview from "@/components/game/slalom/SlalomPreview";
 import ClimbScene from "@/components/game/climb/ClimbScene";
 import { formatCode } from "@/lib/format";
 import ChasePreview from "@/components/game/chase/ChasePreview";
@@ -66,7 +67,7 @@ export default function Home() {
             <h1 className={s.title}>
               Quiz där <em>kunskap</em> vinner.
             </h1>
-            <p className={s.lead}>Kör undan polisen, försvara stugan eller klättra mot toppen – men bara rätt svar tar dig framåt.</p>
+            <p className={s.lead}>Kör undan polisen, åk slalom, pimpla genom isen eller försvara stugan – men bara rätt svar tar dig framåt.</p>
 
             <form className={s.join} onSubmit={submit} noValidate>
               <label htmlFor="kod" className="sr-only">
@@ -148,7 +149,7 @@ export default function Home() {
         </div>
 
         <section className={s.section} aria-labelledby="spellagen-rubrik" id="spellagen">
-          <p className="eyebrow">Fyra spellägen</p>
+          <p className="eyebrow">Fem spellägen</p>
           <h2 id="spellagen-rubrik" style={{ marginTop: 6 }}>
             Svara rätt. Sen spelar du.
           </h2>
@@ -162,6 +163,16 @@ export default function Home() {
                 <span className={s.modeTag}>I egen takt</span>
                 <h3>Biljakt</h3>
                 <p>Kör undan polisen genom stan, byt bil som spöke och skaka av dig jakten. Rätt svar ger stjärnor som multiplicerar dina poäng.</p>
+              </div>
+            </article>
+            <article className={s.mode}>
+              <div className={s.modeArt}>
+                <SlalomPreview />
+              </div>
+              <div className={s.modeBody}>
+                <span className={s.modeTag}>Nytt · I egen takt</span>
+                <h3>Slalom</h3>
+                <p>Åk nerför fjället genom portarna och undvik granarna. I guldportarna kommer en fråga – rätt svar höjer multiplikatorn.</p>
               </div>
             </article>
             <article className={s.mode}>
@@ -184,7 +195,7 @@ export default function Home() {
                 <p>Försvara stugan mot trollen. Rätt svar ger virke att bygga torn för – men trollen väntar inte medan du funderar.</p>
               </div>
             </article>
-            <article className={s.mode}>
+            <article className={`${s.mode} ${s.modeWide}`}>
               <div className={s.modeArt} style={{ background: "#dcefe7", display: "grid", alignItems: "end" }}>
                 <ClimbScene skin="mosse" score={520} maxScore={1200} field={[{ skinId: "raven", score: 700 }, { skinId: "kassetten", score: 300 }, { skinId: "flugis", score: 610 }]} height={200} legs={["Skogen", "Kalfjället", "Toppen"]} />
               </div>
@@ -342,7 +353,7 @@ export default function Home() {
               </p>
               <p className={s.planLead}>För dig som vill testa i din klass.</p>
               <ul>
-                <li>Alla fyra spellägena</li>
+                <li>Alla fem spellägena</li>
                 <li>Upp till 40 elever per spel</li>
                 <li>Egna quiz och färdiga quiz</li>
                 <li>Resultat efter varje lektion</li>

@@ -29,7 +29,7 @@ export default function Image() {
             <div style={{ fontSize: 84, fontWeight: 800, lineHeight: 1.05, display: "flex", flexWrap: "wrap" }}>
               Quiz där&nbsp;<span style={{ color: "#ffc93c" }}>kunskap</span>&nbsp;vinner.
             </div>
-            <div style={{ marginTop: 24, fontSize: 32, color: "#c9e6d9", maxWidth: 720 }}>Biljakt, Isfiske, Fjällförsvar och Topptur – byggt för svensk skola.</div>
+            <div style={{ marginTop: 24, fontSize: 32, color: "#c9e6d9", maxWidth: 720 }}>Biljakt, Slalom, Isfiske, Fjällförsvar och Topptur – byggt för svensk skola.</div>
           </div>
         </div>
       </div>

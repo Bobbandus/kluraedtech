@@ -15,6 +15,7 @@ import type { GameMode } from "@/lib/rooms/types";
 import { MountainScene } from "@/components/scene";
 import ChasePreview from "@/components/game/chase/ChasePreview";
 import FishPreview from "@/components/game/fishing/FishPreview";
+import SlalomPreview from "@/components/game/slalom/SlalomPreview";
 import DefensePreview from "@/components/game/defense/DefensePreview";
 
 export default function HostSetup() {
@@ -30,7 +31,7 @@ export default function HostSetup() {
   useEffect(() => {
     const sp = new URLSearchParams(window.location.search);
     const l = sp.get("lage");
-    if (l === "fjall" || l === "topptur" || l === "jakt" || l === "fiske") setMode(l);
+    if (l === "fjall" || l === "topptur" || l === "jakt" || l === "fiske" || l === "slalom") setMode(l);
     const k = sp.get("klass");
     if (k && CLASSES.some((c) => c.id === k)) setCls(k);
   }, []);
@@ -89,6 +90,7 @@ export default function HostSetup() {
           {(
             [
               { id: "jakt", name: "Biljakt", tag: "Kör undan polisen i egen takt", text: "Varje elev kör en egen bil genom stan med polisen efter sig. Full mätare ger en fråga – rätt svar ger en stjärna som höjer poängmultiplikatorn. Flest poäng vinner.", time: "5–12 min" },
+              { id: "slalom", name: "Slalom", tag: "Åk genom portarna i egen takt", text: "Varje elev åker nerför fjället genom portar. I guldportarna kommer en fråga – rätt svar höjer multiplikatorn, fel sänker den. Den som kan mest och åker säkrast vinner.", time: "5–12 min" },
               { id: "fiske", name: "Isfiske", tag: "Pimpla genom isen i egen takt", text: "Varje elev fiskar genom ett hål i isen. Rätt svar ger bete och längre lina – och de värdefulla fiskarna simmar djupast. Den som kan mest når längst ner.", time: "5–12 min" },
               { id: "fjall", name: "Fjällförsvar", tag: "Tower defense i egen takt", text: "Varje elev försvarar sin stuga mot troll. Rätt svar ger virke att bygga torn för. Trollen väntar inte – man måste både kunna och spela.", time: "5–12 min" },
               { id: "topptur", name: "Topptur", tag: "Gemensamma frågor på tavlan", text: "Alla svarar på samma fråga samtidigt och klättrar mot toppen. Du styr tempot och kan pausa för att prata om svaren.", time: `ca ${estimateMinutes(quiz)} min` },
@@ -104,7 +106,7 @@ export default function HostSetup() {
                 className="card"
                 style={{ padding: 12, textAlign: "left", borderColor: on ? "var(--ink)" : undefined, boxShadow: on ? "0 4px 0 var(--ink)" : "0 4px 0 var(--line)", transform: on ? "translateY(-2px)" : undefined, transition: "all .15s var(--ease-out)" }}
               >
-                {m.id === "jakt" ? <ChasePreview /> : m.id === "fiske" ? <FishPreview /> : m.id === "fjall" ? <DefensePreview /> : <div style={{ borderRadius: 16, overflow: "hidden", aspectRatio: "3 / 2", background: "#dcefe7" }}><MountainScene climbers={[{ id: "a", skin: "mosse", t: 0.3 }, { id: "b", skin: "raven", t: 0.55, highlight: true }, { id: "c", skin: "kassetten", t: 0.75 }]} /></div>}
+                {m.id === "jakt" ? <ChasePreview /> : m.id === "slalom" ? <SlalomPreview /> : m.id === "fiske" ? <FishPreview /> : m.id === "fjall" ? <DefensePreview /> : <div style={{ borderRadius: 16, overflow: "hidden", aspectRatio: "3 / 2", background: "#dcefe7" }}><MountainScene climbers={[{ id: "a", skin: "mosse", t: 0.3 }, { id: "b", skin: "raven", t: 0.55, highlight: true }, { id: "c", skin: "kassetten", t: 0.75 }]} /></div>}
                 <div style={{ padding: "12px 6px 4px" }}>
                   <div className="row between">
                     <span style={{ fontFamily: "var(--font-display)", fontWeight: 900, fontSize: "1.3rem" }}>{m.name}</span>
@@ -239,6 +241,11 @@ const MODE_POINTS: Partial<Record<GameMode, Record<Energy, string[]>>> = {
     lugn: ["Färre och långsammare poliser", "Polisen skjuter först vid höga nivåer", "Ingen topplista på projektorn", "Lugnare tempo"],
     standard: ["Polisen blir fler med dina stjärnor", "Skjuter från två stjärnor", "Topplistan visas på projektorn", "Eleven ser sin placering"],
     fullfart: ["Fler och snabbare poliser", "Polisen skjuter från första stjärnan", "Kortare tid mellan frågorna", "Topplista och placering"],
+  },
+  slalom: {
+    lugn: ["Inga namn på projektorn", "Projektorn visar klassens portar", "Eleven fokuserar på sin åkning", "Pallen visar tre namn"],
+    standard: ["Störtlopp med namn på projektorn", "Eleven ser sin placering", "Pallen visar fem namn", "Rekommenderas för de flesta"],
+    fullfart: ["Mest tävling", "Störtlopp och placering", "Pallen visar fem namn", "Passar fredagar"],
   },
   fiske: {
     lugn: ["Ingen topplista på projektorn", "Projektorn visar klassens fångst", "Eleven fokuserar på sitt fiske", "Pallen visar tre namn"],

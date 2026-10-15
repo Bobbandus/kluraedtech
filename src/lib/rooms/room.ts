@@ -37,6 +37,7 @@ import {
   type DefenseState,
 } from "@/lib/game/defense";
 import { CELL, POINTS, createCity, multiplier, seedFromCode, type City } from "@/lib/game/chase";
+import { MAX_LEVEL as SLALOM_MAX, botRate, scoreCap as slalomCap } from "@/lib/game/slalom";
 import { FISH, MAX_BAIT, START_BAIT, baitReward, botCatch, scoreCap, type FishKind } from "@/lib/game/fishing";
 import { checkName } from "@/lib/moderation";
 import { makeClassmates, randomNickname } from "@/data/people";
@@ -82,6 +83,8 @@ interface RoomPlayer extends PlayerState {
   walk?: { i: number; j: number; pi: number; pj: number; k: number };
   /** Isfiske-bot */
   angler?: { bait: number; nextCatchAt: number };
+  /** Slalom-bot */
+  skier?: { skill: number };
 }
 
 function token(rng: Rng): string {
@@ -200,7 +203,7 @@ export class Room {
 
   private scoreOf(p: RoomPlayer) {
     const m = this.settings.mode;
-    return m === "fjall" ? this.fjallScore(p) : m === "jakt" || m === "fiske" ? Math.floor(p.report.score) : p.score;
+    return m === "fjall" ? this.fjallScore(p) : m === "jakt" || m === "fiske" || m === "slalom" ? Math.floor(p.report.score) : p.score;
   }
 
   private get selfPaced() {
@@ -208,7 +211,7 @@ export class Room {
   }
 
   private board(): BoardRow[] {
-    const jakt = this.settings.mode === "jakt";
+    const jakt = this.settings.mode === "jakt" || this.settings.mode === "slalom";
     const fiske = this.settings.mode === "fiske";
     return ranked(
       this.players.map((p) => ({
@@ -306,6 +309,7 @@ export class Room {
         if (!p.isBot) continue;
         if (this.settings.mode === "jakt") this.initBotChase(p, now);
         else if (this.settings.mode === "fiske") this.initBotFish(p, now);
+        else if (this.settings.mode === "slalom") this.initBotSlalom(p, now);
         else this.initBotDefense(p, now);
       }
     } else {
@@ -475,6 +479,18 @@ export class Room {
       case "fjall_report": {
         const s = action.state;
         if (!s || typeof s !== "object") return { ok: false, error: "Ogiltig rapport." };
+        if (this.settings.mode === "slalom") {
+          const secs = (now - (this.phaseAt || now)) / 1000;
+          p.report = {
+            wave: Math.max(0, Math.min(9999, Math.floor(Number(s.wave) || 0))),
+            hp: 0,
+            score: Math.max(0, Math.min(slalomCap(secs, p.correct), Math.floor(Number(s.score) || 0))),
+            downed: !!s.downed,
+            stars: Math.max(0, Math.min(p.correct, SLALOM_MAX, Math.floor(Number(s.stars) || 0))),
+          };
+          this.bump();
+          return { ok: true };
+        }
         if (this.settings.mode === "fiske") {
           const best = typeof s.best === "string" && s.best in FISH ? (s.best as FishKind) : undefined;
           p.report = {
@@ -608,6 +624,35 @@ export class Room {
     }
   }
 
+  private initBotSlalom(p: RoomPlayer, now: number) {
+    p.skier = { skill: Math.max(0, Math.min(1, 0.35 + (1 - (p.profile?.pace ?? 0.4)) * 0.4 + gaussian(this.rng) * 0.15)) };
+    p.report = { wave: 0, hp: 0, score: 0, downed: false, stars: 0 };
+    p.nextAnswerAt = now + (7 + this.rng() * 4) * 1000;
+  }
+
+  private stepBotSlalom(p: RoomPlayer, dt: number) {
+    const r = p.report;
+    const level = r.stars ?? 0;
+    // Ibland kraschar boten en stund
+    if (r.downed) {
+      if (this.rng() < dt / 1.3) r.downed = false;
+    } else {
+      r.score += botRate(level, p.skier!.skill) * dt;
+      r.wave += (dt * (80 + p.skier!.skill * 30)) / 64 * (0.55 + p.skier!.skill * 0.4);
+      if (this.rng() < dt * (0.06 - p.skier!.skill * 0.04)) r.downed = true;
+    }
+    if (p.nextAnswerAt !== undefined && this.lastSim >= p.nextAnswerAt) {
+      const qi = this.drawCard(p);
+      const q = this.quiz.questions[qi];
+      const ans = botAnswer(this.rng, p.profile!, { options: q.options.length, correct: q.correct, time: 30 }, { timeLimit: 999 });
+      const option = ans.option ?? 0;
+      const correct = option === q.correct;
+      this.fjallRecord(p, qi, option, correct);
+      r.stars = correct ? Math.min(SLALOM_MAX, level + 1) : Math.max(0, level - 1);
+      p.nextAnswerAt = this.lastSim + (this.botReadTime(p) + (correct ? 0.9 : 3.6) + 7 + this.rng() * 2) * 1000;
+    }
+  }
+
   private initBotFish(p: RoomPlayer, now: number) {
     p.angler = { bait: START_BAIT, nextCatchAt: now + (6 + this.rng() * 8) * 1000 };
     p.report = { wave: 0, hp: 0, score: 0, downed: false, fish: 0 };
@@ -656,6 +701,10 @@ export class Room {
     while (this.lastSim + DT * 1000 <= until) {
       this.lastSim += DT * 1000;
       for (const p of this.players) {
+        if (p.isBot && p.skier) {
+          this.stepBotSlalom(p, DT);
+          continue;
+        }
         if (p.isBot && p.angler) {
           this.stepBotFish(p);
           continue;
@@ -790,6 +839,7 @@ export class Room {
         downed: p.report.downed,
         ...(jakt ? { stars: this.starsOf(p), x: p.report.x, y: p.report.y, a: p.report.a, busted: p.report.busted, busts: p.report.busts } : {}),
         ...(this.settings.mode === "fiske" ? { fish: p.report.fish ?? 0, best: p.report.best, last: p.report.last } : {}),
+        ...(this.settings.mode === "slalom" ? { stars: this.starsOf(p), wave: Math.floor(p.report.wave) } : {}),
       })),
       qIndex: this.qIndex,
       total: this.n,
@@ -859,6 +909,7 @@ export class Room {
     const order = this.board();
     const fj = this.selfPaced;
     const jakt = this.settings.mode === "jakt";
+    const slalom = this.settings.mode === "slalom";
     const missed = fj
       ? Array.from(new Map(p.fjallAnswers.filter((a) => !a.correct).map((a) => [a.q, a])).values())
       : this.quiz.questions.map((_, i) => ({ q: i, rec: p.answers.find((a) => a.q === i) })).filter((x) => !x.rec?.correct).map((x) => ({ q: x.q, option: x.rec?.option ?? null }));
@@ -870,7 +921,8 @@ export class Room {
       bestStreak: p.bestStreak,
       score: this.scoreOf(p),
       wave: this.settings.mode === "fjall" ? p.report.wave : undefined,
-      stars: jakt ? this.starsOf(p) : undefined,
+      stars: jakt || slalom ? this.starsOf(p) : undefined,
+      gates: slalom ? Math.floor(p.report.wave) : undefined,
       busts: jakt ? (p.report.busts ?? 0) : undefined,
       fish: this.settings.mode === "fiske" ? (p.report.fish ?? 0) : undefined,
       best: this.settings.mode === "fiske" ? p.report.best : undefined,

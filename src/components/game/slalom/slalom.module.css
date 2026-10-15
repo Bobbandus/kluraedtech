@@ -1,0 +1,118 @@
+.shell {
+  background: #e6eff5;
+}
+.scoreHud {
+  position: absolute;
+  top: max(12px, env(safe-area-inset-top));
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  pointer-events: none;
+  color: #fff;
+}
+.score {
+  padding: 2px 16px;
+  border-radius: 14px;
+  background: rgba(16, 22, 24, 0.72);
+  font-weight: 900;
+  font-size: 2.1rem;
+  line-height: 1.15;
+  font-variant-numeric: tabular-nums;
+}
+.multRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 10px 4px 6px;
+  border-radius: 999px;
+  background: rgba(16, 22, 24, 0.6);
+}
+.mult {
+  display: inline-grid;
+  place-items: center;
+  min-width: 40px;
+  height: 26px;
+  padding: 0 8px;
+  border-radius: 999px;
+  background: linear-gradient(180deg, #ffe07a, #f2b705);
+  color: #3a2a00;
+  font-weight: 900;
+  font-size: 1rem;
+  animation: multPop 0.45s cubic-bezier(0.3, 1.6, 0.5, 1);
+}
+@keyframes multPop {
+  from {
+    transform: scale(1.5);
+  }
+  to {
+    transform: scale(1);
+  }
+}
+.levels {
+  display: flex;
+  gap: 3px;
+}
+.levels i {
+  width: 8px;
+  height: 12px;
+  border-radius: 2px;
+  background: rgba(255, 255, 255, 0.22);
+}
+.levels i.on {
+  background: #ffd84a;
+  box-shadow: 0 0 6px rgba(255, 216, 74, 0.7);
+}
+.chips {
+  position: absolute;
+  top: max(14px, env(safe-area-inset-top));
+  left: 14px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+  pointer-events: none;
+}
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  border-radius: 10px;
+  background: rgba(16, 22, 24, 0.6);
+  color: #fff;
+  font-weight: 800;
+  font-size: 0.9rem;
+}
+.chipHot {
+  background: linear-gradient(90deg, #ff7a1a, #e0483b);
+}
+.qDot {
+  display: inline-grid;
+  place-items: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 5px;
+  background: #f2b705;
+  color: #3a2303;
+  font-size: 0.8rem;
+  font-weight: 900;
+}
+@media (max-width: 640px) {
+  .chips {
+    top: auto;
+    bottom: max(74px, env(safe-area-inset-bottom));
+  }
+  .scoreHud {
+    top: max(58px, env(safe-area-inset-top));
+  }
+  .score {
+    font-size: 1.6rem;
+  }
+  .levels i {
+    width: 6px;
+    height: 10px;
+  }
+}

@@ -203,6 +203,32 @@
   color: var(--ink-2);
   font-size: 0.96rem;
 }
+.modeWide {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr);
+  align-items: center;
+}
+.modeWide .modeArt {
+  aspect-ratio: auto;
+  height: 100%;
+  min-height: 240px;
+  border-bottom: 0;
+  border-right: 2px solid var(--line);
+}
+.modeWide .modeBody {
+  padding: 24px 28px;
+}
+@media (max-width: 760px) {
+  .modeWide {
+    display: flex;
+  }
+  .modeWide .modeArt {
+    min-height: 200px;
+    border-right: 0;
+    border-bottom: 2px solid var(--line);
+  }
+}
 .modeTag {
   font-size: 0.78rem;
   font-weight: 800;

@@ -494,7 +494,19 @@ function drawMini(mini: HTMLCanvasElement, overview: HTMLCanvasElement, g: Chase
 
 /* ---------- Frågan ---------- */
 
-function QuestionBar({ act, disabled, onResult, onClose }: { act: (a: PlayerAction) => Promise<ActResult>; disabled: boolean; onResult: (correct: boolean) => void; onClose: () => void }) {
+export function QuestionBar({
+  act,
+  disabled,
+  onResult,
+  onClose,
+  wrongText = "Ingen stjärna den här gången.",
+}: {
+  act: (a: PlayerAction) => Promise<ActResult>;
+  disabled: boolean;
+  onResult: (correct: boolean) => void;
+  onClose: () => void;
+  wrongText?: string;
+}) {
   const [q, setQ] = useState<PublicQuestion | null>(null);
   const [unlocked, setUnlocked] = useState(false);
   const [picked, setPicked] = useState<number | null>(null);
@@ -577,7 +589,7 @@ function QuestionBar({ act, disabled, onResult, onClose }: { act: (a: PlayerActi
           </div>
           {res && !res.correct && (
             <div className={s.fb} role="status">
-              <strong>Ingen stjärna den här gången.</strong> {res.explanation ?? `Rätt svar: ${q.options[res.correctIndex]}.`}
+              <strong>{wrongText}</strong> {res.explanation ?? `Rätt svar: ${q.options[res.correctIndex]}.`}
               <span className={s.lock} style={{ ["--dur" as string]: `${FEEDBACK_WRONG}s` }} />
             </div>
           )}
