@@ -44,10 +44,13 @@ export function isTopCorner(u: number, v: number) {
 }
 
 /** Avgör skottet. rng ger 0..1. */
-export function shoot(u: number, v: number, streak: number, rng: () => number, energy: Energy = "standard"): Shot {
-  // Målvakten gissar – oftast åt ett hörn
+export function shoot(u: number, v: number, streak: number, rng: () => number, energy: Energy = "standard", tendency = 0): Shot {
+  // Målvakten gissar – oftast åt ett hörn, och läser av den som alltid skjuter åt samma håll
+  const t = energy === "lugn" ? 0 : Math.max(-1, Math.min(1, tendency));
+  const pl = 0.4 - 0.3 * t;
+  const pr = 0.4 + 0.3 * t;
   const r = rng();
-  const keeper: -1 | 0 | 1 = r < 0.4 ? -1 : r < 0.8 ? 1 : 0;
+  const keeper: -1 | 0 | 1 = r < pl ? -1 : r < pl + pr ? 1 : 0;
   let result: ShotResult = "goal";
   if (Math.abs(u) > 1.04) result = "wide";
   else if (v > 1.04) result = "over";

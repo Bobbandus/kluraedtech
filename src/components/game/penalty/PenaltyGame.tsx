@@ -40,7 +40,7 @@ export default function PenaltyGame({ view, act, clockOffset }: { view: PlayerVi
   const [banner, setBanner] = useState<{ text: string; good: boolean; points: number; key: number } | null>(null);
   const [soundOn, toggleSound] = useSound();
   const ended = view.phase === "ended";
-  const st = useRef({ phase, reduced, u: 0, aimT0: 0, flight: null as Flight | null, cheer: 0, lastCorrect: false });
+  const st = useRef({ phase, reduced, u: 0, aimT0: 0, flight: null as Flight | null, cheer: 0, lastCorrect: false, sides: [] as number[] });
   st.current.phase = phase;
   st.current.reduced = reduced;
   const look = useRef({ kit: pick(KITS, view.code, 3), shirt: pick(SHIRTS, view.you.skinId, 11) });
@@ -98,7 +98,10 @@ export default function PenaltyGame({ view, act, clockOffset }: { view: PlayerVi
       setPhase("aimV");
     } else if (u.phase === "aimV") {
       const v = sweep(t, energy, "v");
-      const shot: Shot = shoot(u.u, v, stats.current.streak, Math.random, energy);
+      // Senaste skottens sida – målvakten känner igen mönster
+      const tendency = u.sides.length ? u.sides.reduce((a, b) => a + b, 0) / u.sides.length : 0;
+      const shot: Shot = shoot(u.u, v, stats.current.streak, Math.random, energy, tendency);
+      u.sides = [...u.sides.slice(-3), Math.abs(u.u) < 0.25 ? 0 : Math.sign(u.u)];
       u.flight = { shot, t: 0 };
       sfx("shot");
       setPhase("flight");
