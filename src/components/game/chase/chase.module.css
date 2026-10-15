@@ -1,4 +1,5 @@
 .shell {
+  container-type: size;
   position: fixed;
   inset: 0;
   overflow: hidden;
@@ -597,7 +598,7 @@
   }
 }
 
-@media (max-width: 700px) {
+@container (max-width: 700px) {
   .opts,
   .opts[data-n="3"],
   .opts[data-n="5"],
@@ -851,7 +852,7 @@
   opacity: 0;
   pointer-events: none;
 }
-@media (max-width: 700px) {
+@container (max-width: 700px) {
   .score {
     font-size: 1.8rem;
   }
