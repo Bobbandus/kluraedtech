@@ -94,14 +94,17 @@ export default function Dashboard() {
                     <span>{q.level}</span>
                     {q.plays ? <span>Spelat {q.plays} {q.plays === 1 ? "gång" : "gånger"}</span> : <span>Inte spelat än</span>}
                   </div>
-                  <div className={s.modePick} role="group" aria-label={`Starta ${q.title} som`}>
+                  <div className={s.modePick} role="group" aria-label={`Starta ${q.title} direkt som`}>
                     {(["jakt", "straff", "slalom", "fiske", "fjall", "topptur"] as const).map((m) => (
-                      <Link key={m} href={`/larare/starta/${q.id}?lage=${m}`} className={s.modeBtn} title={MODE_INFO[m].tag}>
-                        <Icon name={MODE_INFO[m].icon} size={15} /> {MODE_INFO[m].name}
+                      <Link key={m} href={`/larare/starta/${q.id}?lage=${m}`} className={s.modeBtn} title={`${MODE_INFO[m].name} – ${MODE_INFO[m].tag}`} aria-label={`Starta som ${MODE_INFO[m].name}`}>
+                        <Icon name={MODE_INFO[m].icon} size={16} />
                       </Link>
                     ))}
                   </div>
                 </div>
+                <Link href={`/larare/starta/${q.id}`} className={`btn btn-primary btn-sm ${s.quickStart}`}>
+                  <Icon name="play" size={16} /> Starta
+                </Link>
               </div>
             ))}
           </div>

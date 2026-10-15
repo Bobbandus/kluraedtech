@@ -267,12 +267,15 @@
   gap: 6px;
   margin-top: 10px;
 }
+.quickStart {
+  flex-shrink: 0;
+  align-self: center;
+}
 .modeBtn {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
+  display: inline-grid;
+  place-items: center;
+  width: 34px;
   height: 32px;
-  padding: 0 12px;
   border-radius: 10px;
   border: 2px solid var(--line);
   background: var(--card);
@@ -295,10 +298,7 @@
   .quickRow .thumb {
     display: none;
   }
-  .modeBtn {
-    height: 30px;
-    padding: 0 9px;
-    font-size: 0.8rem;
-    gap: 4px;
+  .modePick {
+    display: none;
   }
 }
