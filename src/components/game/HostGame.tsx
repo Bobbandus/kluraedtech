@@ -464,7 +464,7 @@ export default function HostGame({ code, keyboard = true }: { code: string; keyb
       {top}
       <main id="innehall" className={s.main} style={{ alignItems: "center", textAlign: "center" }}>
         <p style={{ color: "#8fd1b6", fontWeight: 700 }}>{view.quizTitle}</p>
-        <h1 style={{ color: "#fff", fontSize: "clamp(2.2rem,5vw,3.6rem)" }}>{view.mode === "jakt" ? "Jakten är över!" : view.mode === "fiske" ? "Spöna upp!" : view.mode === "slalom" ? "Målgång!" : fj ? "Försvaret höll!" : "Toppen nådd!"}</h1>
+        <h1 style={{ color: "#fff", fontSize: "clamp(2.2rem,5vw,3.6rem)" }}>{view.mode === "jakt" ? "Jakten är över!" : view.mode === "fiske" ? "Fisket är slut!" : view.mode === "slalom" ? "Målgång!" : fj ? "Försvaret höll!" : "Toppen nådd!"}</h1>
         <div className={s.podium} style={{ width: "100%" }}>
           {placeOrder.map((i) => {
             const p = podium[i];

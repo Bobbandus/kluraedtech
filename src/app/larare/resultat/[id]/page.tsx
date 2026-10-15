@@ -214,7 +214,7 @@ export default function ResultDetail() {
                 <span style={{ width: 120, flex: "none" }} className="bar" aria-hidden="true">
                   <span style={{ width: `${a * 100}%`, background: a >= 0.75 ? "var(--ok)" : a >= 0.55 ? "var(--hjortron)" : "var(--lingon)" }} />
                 </span>
-                <span style={{ width: 48, textAlign: "right", fontWeight: 700 }}>{pct(a)}</span>
+                <span style={{ minWidth: 56, textAlign: "right", fontWeight: 700, whiteSpace: "nowrap", fontVariantNumeric: "tabular-nums" }}>{pct(a)}</span>
                 <Icon name={openQ === i ? "chevronUp" : "chevronDown"} size={18} />
               </button>
               {openQ === i && (
