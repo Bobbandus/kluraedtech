@@ -23,7 +23,12 @@ export default function DefensePreview({ className }: { className?: string }) {
     const el = wrap.current!;
     const vis = onScreen(el);
     const r = new DefenseRenderer(canvas.current!);
-    const fit = () => r.resize(el.clientWidth);
+    // En storleksändring tömmer canvasen – rita om även om den inte syns
+    let drawn = false;
+    const fit = () => {
+      r.resize(el.clientWidth);
+      drawn = false;
+    };
     fit();
     const ro = new ResizeObserver(fit);
     ro.observe(el);
@@ -33,13 +38,15 @@ export default function DefensePreview({ className }: { className?: string }) {
     const loop = (now: number) => {
       const dt = Math.min(0.1, (now - last) / 1000);
       last = now;
-      if (!vis.visible) {
+      // Rita alltid första bilden, sedan bara när den syns
+      if (!vis.visible && drawn) {
         raf = requestAnimationFrame(loop);
         return;
       }
       if (!reduce) step(st, dt);
       if (st.hp < 10) st.hp = 20;
       r.draw(st, { hover: null, placing: null, selectedTowerId: null, reducedMotion: reduce }, dt);
+      drawn = true;
       raf = requestAnimationFrame(loop);
     };
     raf = requestAnimationFrame(loop);

@@ -28,7 +28,12 @@ export default function FishPreview({ className }: { className?: string }) {
     const el = wrap.current!;
     const vis = onScreen(el);
     const r = new FishRenderer(canvas.current!);
-    const fit = () => r.resize(el.clientWidth);
+    // En storleksändring tömmer canvasen – rita om även om den inte syns
+    let drawn = false;
+    const fit = () => {
+      r.resize(el.clientWidth);
+      drawn = false;
+    };
     fit();
     const ro = new ResizeObserver(fit);
     ro.observe(el);
@@ -42,7 +47,8 @@ export default function FishPreview({ className }: { className?: string }) {
     const loop = (now: number) => {
       const dt = Math.min(0.05, (now - last) / 1000);
       last = now;
-      if (!vis.visible) {
+      // Rita alltid första bilden, sedan bara när den syns
+      if (!vis.visible && drawn) {
         raf = requestAnimationFrame(loop);
         return;
       }
@@ -51,6 +57,7 @@ export default function FishPreview({ className }: { className?: string }) {
         step(g, dt);
       }
       r.draw(g, { reducedMotion: reduce, coat: "#d9483b", hat: "#2f7fc1" }, reduce ? 0 : dt);
+      drawn = true;
       raf = requestAnimationFrame(loop);
     };
     raf = requestAnimationFrame(loop);

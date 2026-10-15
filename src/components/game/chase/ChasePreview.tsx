@@ -24,7 +24,12 @@ export default function ChasePreview({ className }: { className?: string }) {
     const el = wrap.current!;
     const vis = onScreen(el);
     const r = new ChaseRenderer(canvas.current!);
-    const fit = () => r.resize(el.clientWidth, Math.round((el.clientWidth * 2) / 3));
+    // En storleksändring tömmer canvasen – rita om även om den inte syns
+    let drawn = false;
+    const fit = () => {
+      r.resize(el.clientWidth, Math.round((el.clientWidth * 2) / 3));
+      drawn = false;
+    };
     fit();
     r.snapCamera(st);
     const ro = new ResizeObserver(fit);
@@ -35,7 +40,8 @@ export default function ChasePreview({ className }: { className?: string }) {
     const loop = (now: number) => {
       const dt = Math.min(0.05, (now - last) / 1000);
       last = now;
-      if (!vis.visible) {
+      // Rita alltid första bilden, sedan bara när den syns
+      if (!vis.visible && drawn) {
         raf = requestAnimationFrame(loop);
         return;
       }
@@ -46,6 +52,7 @@ export default function ChasePreview({ className }: { className?: string }) {
         if (st.phase === "question") st.phase = "drive";
       }
       r.draw(st, { reducedMotion: true, focus: 0 }, reduce ? 0 : dt);
+      drawn = true;
       raf = requestAnimationFrame(loop);
     };
     raf = requestAnimationFrame(loop);

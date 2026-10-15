@@ -34,7 +34,12 @@ export default function SlalomPreview({ className }: { className?: string }) {
     const el = wrap.current!;
     const vis = onScreen(el);
     const r = new SlalomRenderer(canvas.current!);
-    const fit = () => r.resize(el.clientWidth, el.clientHeight, 160);
+    // En storleksändring tömmer canvasen – rita om även om den inte syns
+    let drawn = false;
+    const fit = () => {
+      r.resize(el.clientWidth, el.clientHeight, 160);
+      drawn = false;
+    };
     fit();
     const ro = new ResizeObserver(fit);
     ro.observe(el);
@@ -44,7 +49,8 @@ export default function SlalomPreview({ className }: { className?: string }) {
     const loop = (now: number) => {
       const dt = Math.min(0.05, (now - last) / 1000);
       last = now;
-      if (!vis.visible) {
+      // Rita alltid första bilden, sedan bara när den syns
+      if (!vis.visible && drawn) {
         raf = requestAnimationFrame(loop);
         return;
       }
@@ -53,6 +59,7 @@ export default function SlalomPreview({ className }: { className?: string }) {
         step(g, dt);
       }
       r.draw(g, { reducedMotion: reduce, jacket: "#e0483b", helmet: "#1b2226" }, reduce ? 0 : dt);
+      drawn = true;
       raf = requestAnimationFrame(loop);
     };
     raf = requestAnimationFrame(loop);
