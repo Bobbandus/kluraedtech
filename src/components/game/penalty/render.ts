@@ -125,6 +125,60 @@ function ballSprite(size: number) {
   return c;
 }
 
+const SHOOTER = [
+  "....HHHH....",
+  "...HHHHHH...",
+  "...HHHHHH...",
+  "....SSSS....",
+  "..CCCCCCCC..",
+  ".CCCCCCCCCC.",
+  "SCCCWWWWCCCS",
+  "SCCCCWWCCCCS",
+  "SCCCCWWCCCCS",
+  "SCCCWWWWCCCS",
+  ".CCCCCCCCCC.",
+  "..CCCCCCCC..",
+  "..PPPPPPPP..",
+  "..PPPPPPPP..",
+  "..PPP..PPP..",
+  "..SSS..SSS..",
+  "..WWW..WWW..",
+  "..WWW..WWW..",
+  "..BBB..BBB..",
+];
+const SHOOTER_KICK = [
+  "....HHHH....",
+  "...HHHHHH...",
+  "...HHHHHH...",
+  "....SSSS....",
+  "..CCCCCCCC..",
+  ".CCCCCCCCCC.",
+  "SCCCWWWWCCCS",
+  "SCCCCWWCCCCS",
+  ".CCCCWWCCCCS",
+  ".CCCWWWWCCC.",
+  ".CCCCCCCCCC.",
+  "..CCCCCCCC..",
+  "..PPPPPPPP..",
+  "..PPPPPPPPP.",
+  "..PPP...PPP.",
+  "..SSS....SSS",
+  "..WWW....WWW",
+  "..WWW.....BB",
+  "..BBB.......",
+];
+
+function shooterSprite(shirt: string, kick: boolean) {
+  const key = `shooter:${shirt}:${kick}`;
+  let c = cache.get(key);
+  if (!c) {
+    const map = { H: "#3a2a1c", S: "#f2c9a0", C: shirt, W: "#f4f1e8", P: "#1b2226", B: "#10161a" };
+    c = toCanvas(outline(grid(kick ? SHOOTER_KICK : SHOOTER, map), "#10161a"));
+    cache.set(key, c);
+  }
+  return c;
+}
+
 export interface Flight {
   shot: Shot;
   t: number;
@@ -327,20 +381,12 @@ export class PenaltyRenderer {
     const ball = ballSprite(size);
     b.drawImage(ball, Math.round(bx - ball.width / 2), Math.round(by - ball.height / 2));
 
-    // Skytten (rygg) bredvid bollen innan skottet
-    if (!f || f.t < 0.15) {
-      const sx = 146;
-      b.fillStyle = "#1b2226";
-      b.fillRect(sx - 1, 160, 12, 26);
-      b.fillStyle = ui.shirt;
-      b.fillRect(sx, 165, 10, 11);
-      b.fillStyle = "#3a2a1c";
-      b.fillRect(sx + 2, 161, 6, 4);
-      b.fillStyle = "#f4f1e8";
-      b.fillRect(sx, 176, 10, 4);
-      b.fillStyle = "#f2c9a0";
-      b.fillRect(sx + 1, 180, 3, 5);
-      b.fillRect(sx + 6, 180, 3, 5);
+    // Skytten (rygg) bredvid bollen
+    {
+      const kick = f ? Math.min(1, f.t / 0.15) : 0;
+      const spr = shooterSprite(ui.shirt, kick > 0.5);
+      const sx = 150 - Math.round(kick * 4);
+      b.drawImage(spr, sx - Math.round(spr.width / 2), 186 - spr.height);
     }
 
     // Konfetti
