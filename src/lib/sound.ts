@@ -83,10 +83,15 @@ export type Sfx =
   | "escape"
   | "tick"
   | "go"
-  | "click";
+  | "click"
+  | "splash"
+  | "bite"
+  | "catch"
+  | "bigcatch"
+  | "reel";
 
 /** Minsta tid mellan två likadana ljud (ms) så att det inte blir kakofoni. */
-const GAP: Partial<Record<Sfx, number>> = { kill: 70, hit: 90, shot: 80, crash: 160, coin: 60, leak: 200 };
+const GAP: Partial<Record<Sfx, number>> = { reel: 70, kill: 70, hit: 90, shot: 80, crash: 160, coin: 60, leak: 200 };
 
 export function sfx(name: Sfx) {
   const now = performance.now();
@@ -163,6 +168,26 @@ export function sfx(name: Sfx) {
       break;
     case "click":
       tone(1200, 0.03, { type: "square", vol: 0.08 });
+      break;
+    case "splash":
+      noise(0.28, { freq: 900, vol: 0.4, type: "lowpass" });
+      tone(520, 0.12, { type: "sine", vol: 0.12, slide: 0.5 });
+      break;
+    case "bite":
+      tone(660, 0.05, { type: "square", vol: 0.14 });
+      tone(990, 0.08, { type: "square", vol: 0.14, at: 0.06 });
+      break;
+    case "reel":
+      tone(1500 + Math.random() * 300, 0.025, { type: "square", vol: 0.05 });
+      break;
+    case "catch":
+      noise(0.2, { freq: 1100, vol: 0.3, type: "lowpass" });
+      [659, 880, 1175].forEach((f, i) => tone(f, 0.14, { type: "triangle", vol: 0.28, at: 0.08 + i * 0.06 }));
+      break;
+    case "bigcatch":
+      noise(0.3, { freq: 900, vol: 0.35, type: "lowpass" });
+      [523, 659, 784, 1047, 1319].forEach((f, i) => tone(f, 0.2, { type: "square", vol: 0.13, at: 0.08 + i * 0.07 }));
+      tone(2093, 0.5, { type: "sine", vol: 0.14, at: 0.45 });
       break;
   }
 }

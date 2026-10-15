@@ -8,6 +8,7 @@ import { Icon } from "@/components/icons";
 import { MountainScene } from "@/components/scene";
 import { useStore } from "@/lib/store";
 import DefensePreview from "@/components/game/defense/DefensePreview";
+import FishPreview from "@/components/game/fishing/FishPreview";
 import ClimbScene from "@/components/game/climb/ClimbScene";
 import { formatCode } from "@/lib/format";
 import ChasePreview from "@/components/game/chase/ChasePreview";
@@ -147,7 +148,7 @@ export default function Home() {
         </div>
 
         <section className={s.section} aria-labelledby="spellagen-rubrik" id="spellagen">
-          <p className="eyebrow">Tre spellägen</p>
+          <p className="eyebrow">Fyra spellägen</p>
           <h2 id="spellagen-rubrik" style={{ marginTop: 6 }}>
             Svara rätt. Sen spelar du.
           </h2>
@@ -158,9 +159,19 @@ export default function Home() {
                 <ChasePreview />
               </div>
               <div className={s.modeBody}>
-                <span className={s.modeTag}>Nytt · I egen takt</span>
+                <span className={s.modeTag}>I egen takt</span>
                 <h3>Biljakt</h3>
                 <p>Kör undan polisen genom stan, byt bil som spöke och skaka av dig jakten. Rätt svar ger stjärnor som multiplicerar dina poäng.</p>
+              </div>
+            </article>
+            <article className={s.mode}>
+              <div className={s.modeArt}>
+                <FishPreview />
+              </div>
+              <div className={s.modeBody}>
+                <span className={s.modeTag}>Nytt · I egen takt</span>
+                <h3>Isfiske</h3>
+                <p>Pimpla genom isen och styr kroken förbi småfisken. Rätt svar ger bete och längre lina – de värdefulla fiskarna simmar djupast.</p>
               </div>
             </article>
             <article className={s.mode}>
@@ -331,7 +342,7 @@ export default function Home() {
               </p>
               <p className={s.planLead}>För dig som vill testa i din klass.</p>
               <ul>
-                <li>Alla tre spellägena</li>
+                <li>Alla fyra spellägena</li>
                 <li>Upp till 40 elever per spel</li>
                 <li>Egna quiz och färdiga quiz</li>
                 <li>Resultat efter varje lektion</li>

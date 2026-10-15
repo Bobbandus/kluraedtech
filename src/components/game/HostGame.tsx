@@ -14,6 +14,7 @@ import { LogoMark } from "@/components/brand";
 import { OPT_COLORS, OPT_KEYS } from "./parts";
 import ClimbScene from "./climb/ClimbScene";
 import ChaseProjector from "./chase/ChaseProjector";
+import FishProjector from "./fishing/FishProjector";
 import LegBoard from "./LegBoard";
 import { MODE_INFO } from "@/lib/modes";
 import { QuestionImage } from "@/components/QuestionImage";
@@ -21,6 +22,7 @@ import s from "./host.module.css";
 
 const LOBBY_RULES: Record<HostView["mode"], string> = {
   jakt: "Kör undan polisen och samla poäng. Rätt svar ger en stjärna – och varje stjärna höjer poängmultiplikatorn. Byt bil som spöke för att skaka av dig polisen.",
+  fiske: "Pimpla genom isen. Rätt svar ger bete och längre lina – och ju djupare desto värdefullare fisk. Styr kroken förbi småfisken.",
   fjall: "Försvara stugan mot trollen. Rätt svar ger virke till nya torn. Trollen väntar inte medan du funderar.",
   topptur: "Alla svarar på samma fråga. Rätt svar tar dig uppåt mot toppen – fart ger bara lite extra.",
 };
@@ -251,6 +253,24 @@ export default function HostGame({ code, keyboard = true }: { code: string; keyb
     );
   }
 
+  /* ---------- Isfiske ---------- */
+  if (view.mode === "fiske" && view.phase === "playing") {
+    return (
+      <div className={s.shell}>
+        <FishProjector
+          view={view}
+          remaining={view.paused ? "Paus" : fmtTime((view.endsAt ?? clock) - clock)}
+          joinText={
+            <>
+              {host}/spela <strong>{formatCode(view.code)}</strong>
+            </>
+          }
+        />
+        {controls}
+      </div>
+    );
+  }
+
   /* ---------- Fjällförsvar ---------- */
   if (fj && view.phase === "playing") {
     const remaining = (view.endsAt ?? clock) - clock;
@@ -424,7 +444,7 @@ export default function HostGame({ code, keyboard = true }: { code: string; keyb
       {top}
       <main id="innehall" className={s.main} style={{ alignItems: "center", textAlign: "center" }}>
         <p style={{ color: "#8fd1b6", fontWeight: 700 }}>{view.quizTitle}</p>
-        <h1 style={{ color: "#fff", fontSize: "clamp(2.2rem,5vw,3.6rem)" }}>{view.mode === "jakt" ? "Jakten är över!" : fj ? "Försvaret höll!" : "Toppen nådd!"}</h1>
+        <h1 style={{ color: "#fff", fontSize: "clamp(2.2rem,5vw,3.6rem)" }}>{view.mode === "jakt" ? "Jakten är över!" : view.mode === "fiske" ? "Spöna upp!" : fj ? "Försvaret höll!" : "Toppen nådd!"}</h1>
         <div className={s.podium} style={{ width: "100%" }}>
           {placeOrder.map((i) => {
             const p = podium[i];
@@ -432,7 +452,7 @@ export default function HostGame({ code, keyboard = true }: { code: string; keyb
               <div key={p.id} className={s.step} style={{ animationDelay: `${[0.5, 1.1, 0][i]}s` }}>
                 <Avatar skin={p.skinId} size={i === 0 ? 96 : 72} style={{ margin: "0 auto" }} className={i === 0 ? "anim-bob" : undefined} />
                 <div style={{ fontWeight: 800, fontSize: "1.3rem", marginTop: 6 }}>{p.name}</div>
-                <div style={{ color: "#c9e6d9" }}>{view.mode === "jakt" ? `${p.score.toLocaleString("sv-SE")} poäng · ★ ${p.stars ?? 0}` : fj ? `Våg ${p.wave ?? 0} · ${p.score.toLocaleString("sv-SE")}` : `${p.score.toLocaleString("sv-SE")} m`}</div>
+                <div style={{ color: "#c9e6d9" }}>{view.mode === "jakt" ? `${p.score.toLocaleString("sv-SE")} poäng · ★ ${p.stars ?? 0}` : view.mode === "fiske" ? `${p.score.toLocaleString("sv-SE")} poäng · ${p.fish ?? 0} fiskar` : fj ? `Våg ${p.wave ?? 0} · ${p.score.toLocaleString("sv-SE")}` : `${p.score.toLocaleString("sv-SE")} m`}</div>
                 <div className={s.block} style={{ height: heights[i], background: i === 0 ? "var(--sol)" : undefined, color: i === 0 ? "var(--ink)" : undefined }}>
                   {i + 1}
                 </div>

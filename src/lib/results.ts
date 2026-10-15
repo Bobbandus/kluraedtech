@@ -34,7 +34,7 @@ export interface SessionResult {
   date: string;
   energy: Energy;
   /** Spelläge (saknas i äldre resultat = Topptur) */
-  mode?: "topptur" | "fjall" | "jakt";
+  mode?: "topptur" | "fjall" | "jakt" | "fiske";
   players: ResultPlayer[];
   questions: ResultQuestion[];
 }

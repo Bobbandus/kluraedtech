@@ -37,6 +37,7 @@ import {
   type DefenseState,
 } from "@/lib/game/defense";
 import { CELL, POINTS, createCity, multiplier, seedFromCode, type City } from "@/lib/game/chase";
+import { FISH, MAX_BAIT, START_BAIT, baitReward, botCatch, scoreCap, type FishKind } from "@/lib/game/fishing";
 import { checkName } from "@/lib/moderation";
 import { makeClassmates, randomNickname } from "@/data/people";
 import type { SessionResult } from "@/lib/results";
@@ -79,6 +80,8 @@ interface RoomPlayer extends PlayerState {
   nextAnswerAt?: number;
   /** Biljakt-bot: kör mellan korsningar */
   walk?: { i: number; j: number; pi: number; pj: number; k: number };
+  /** Isfiske-bot */
+  angler?: { bait: number; nextCatchAt: number };
 }
 
 function token(rng: Rng): string {
@@ -197,7 +200,7 @@ export class Room {
 
   private scoreOf(p: RoomPlayer) {
     const m = this.settings.mode;
-    return m === "fjall" ? this.fjallScore(p) : m === "jakt" ? Math.floor(p.report.score) : p.score;
+    return m === "fjall" ? this.fjallScore(p) : m === "jakt" || m === "fiske" ? Math.floor(p.report.score) : p.score;
   }
 
   private get selfPaced() {
@@ -206,7 +209,19 @@ export class Room {
 
   private board(): BoardRow[] {
     const jakt = this.settings.mode === "jakt";
-    return ranked(this.players.map((p) => ({ id: p.id, name: p.name, skinId: p.skinId, score: this.scoreOf(p), correct: p.correct, wave: p.report.wave, stars: jakt ? this.starsOf(p) : undefined })));
+    const fiske = this.settings.mode === "fiske";
+    return ranked(
+      this.players.map((p) => ({
+        id: p.id,
+        name: p.name,
+        skinId: p.skinId,
+        score: this.scoreOf(p),
+        correct: p.correct,
+        wave: p.report.wave,
+        stars: jakt ? this.starsOf(p) : undefined,
+        ...(fiske ? { fish: p.report.fish ?? 0, best: p.report.best } : {}),
+      })),
+    );
   }
 
   /** Låt alla simulerade klasskamrater gå med direkt (visningsläge). */
@@ -287,7 +302,12 @@ export class Room {
       this.phase = "playing";
       this.endsAt = now + this.settings.minutes * 60_000;
       this.lastSim = now;
-      for (const p of this.players) if (p.isBot) this.settings.mode === "jakt" ? this.initBotChase(p, now) : this.initBotDefense(p, now);
+      for (const p of this.players) {
+        if (!p.isBot) continue;
+        if (this.settings.mode === "jakt") this.initBotChase(p, now);
+        else if (this.settings.mode === "fiske") this.initBotFish(p, now);
+        else this.initBotDefense(p, now);
+      }
     } else {
       this.startQuestion(0, now);
     }
@@ -455,6 +475,20 @@ export class Room {
       case "fjall_report": {
         const s = action.state;
         if (!s || typeof s !== "object") return { ok: false, error: "Ogiltig rapport." };
+        if (this.settings.mode === "fiske") {
+          const best = typeof s.best === "string" && s.best in FISH ? (s.best as FishKind) : undefined;
+          p.report = {
+            wave: 0,
+            hp: 0,
+            score: Math.max(0, Math.min(scoreCap(p.correct), Math.floor(Number(s.score) || 0))),
+            downed: false,
+            fish: Math.max(0, Math.min(START_BAIT + p.correct * 2, Math.floor(Number(s.fish) || 0))),
+            best,
+            last: typeof s.last === "string" && s.last in FISH ? s.last : undefined,
+          };
+          this.bump();
+          return { ok: true };
+        }
         if (this.settings.mode === "jakt") {
           const clamp01 = (v: unknown) => (typeof v === "number" && Number.isFinite(v) ? Math.max(0, Math.min(1, v)) : 0.5);
           // Rimlighetsgräns: poängen kan inte växa fortare än spelet tillåter
@@ -574,6 +608,38 @@ export class Room {
     }
   }
 
+  private initBotFish(p: RoomPlayer, now: number) {
+    p.angler = { bait: START_BAIT, nextCatchAt: now + (6 + this.rng() * 8) * 1000 };
+    p.report = { wave: 0, hp: 0, score: 0, downed: false, fish: 0 };
+    p.nextAnswerAt = now + this.botReadTime(p) * 1000;
+  }
+
+  private stepBotFish(p: RoomPlayer) {
+    const a = p.angler!;
+    const r = p.report;
+    if (a.bait > 0 && this.lastSim >= a.nextCatchAt) {
+      const kind = botCatch(this.rng, p.correct);
+      a.bait--;
+      r.score += FISH[kind].value;
+      r.fish = (r.fish ?? 0) + 1;
+      r.last = kind;
+      if (!r.best || FISH[kind].value > FISH[r.best as FishKind].value) r.best = kind;
+      // Djupare fisk tar längre tid att hämta upp
+      a.nextCatchAt = this.lastSim + (5 + FISH[kind].depth[0] / 30 + this.rng() * 6) * 1000;
+    } else if (a.bait === 0) a.nextCatchAt = Math.max(a.nextCatchAt, this.lastSim + 2000);
+    if (p.nextAnswerAt !== undefined && this.lastSim >= p.nextAnswerAt) {
+      const qi = this.drawCard(p);
+      const q = this.quiz.questions[qi];
+      const ans = botAnswer(this.rng, p.profile!, { options: q.options.length, correct: q.correct, time: 30 }, { timeLimit: 999 });
+      const option = ans.option ?? 0;
+      const correct = option === q.correct;
+      this.fjallRecord(p, qi, option, correct);
+      if (correct) a.bait = Math.min(MAX_BAIT, a.bait + baitReward(p.streak));
+      // Med bete kvar fiskar boten en stund innan nästa fråga
+      p.nextAnswerAt = this.lastSim + (this.botReadTime(p) + (correct ? 1.1 : 3.4) + a.bait * 2.5) * 1000;
+    }
+  }
+
   private initBotDefense(p: RoomPlayer, now: number) {
     p.defense = createDefense(Math.floor(this.rng() * 1e6));
     p.nextAnswerAt = now + this.botReadTime(p) * 1000;
@@ -590,6 +656,10 @@ export class Room {
     while (this.lastSim + DT * 1000 <= until) {
       this.lastSim += DT * 1000;
       for (const p of this.players) {
+        if (p.isBot && p.angler) {
+          this.stepBotFish(p);
+          continue;
+        }
         if (p.isBot && p.walk) {
           this.stepBotChase(p, DT);
           if (p.nextAnswerAt !== undefined && this.lastSim >= p.nextAnswerAt && !p.report.busted) {
@@ -719,6 +789,7 @@ export class Room {
         hp: p.report.hp,
         downed: p.report.downed,
         ...(jakt ? { stars: this.starsOf(p), x: p.report.x, y: p.report.y, a: p.report.a, busted: p.report.busted, busts: p.report.busts } : {}),
+        ...(this.settings.mode === "fiske" ? { fish: p.report.fish ?? 0, best: p.report.best, last: p.report.last } : {}),
       })),
       qIndex: this.qIndex,
       total: this.n,
@@ -801,6 +872,8 @@ export class Room {
       wave: this.settings.mode === "fjall" ? p.report.wave : undefined,
       stars: jakt ? this.starsOf(p) : undefined,
       busts: jakt ? (p.report.busts ?? 0) : undefined,
+      fish: this.settings.mode === "fiske" ? (p.report.fish ?? 0) : undefined,
+      best: this.settings.mode === "fiske" ? p.report.best : undefined,
       missed: missed.slice(0, 8).map((m) => {
         const q = this.quiz.questions[m.q];
         return { text: q.text, answer: q.options[q.correct], yours: m.option !== null && m.option !== undefined ? q.options[m.option] : null, explanation: q.explanation };

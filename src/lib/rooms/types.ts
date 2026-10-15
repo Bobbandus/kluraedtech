@@ -6,7 +6,7 @@ import type { Subject } from "@/components/cover";
  * LocalTransport (demo i webbläsaren) och av servern (src/server).
  */
 
-export type GameMode = "topptur" | "fjall" | "jakt";
+export type GameMode = "topptur" | "fjall" | "jakt" | "fiske";
 
 /** Lägen där varje elev svarar i egen takt (inte gemensamma frågor). */
 export const selfPaced = (m: GameMode) => m !== "topptur";
@@ -65,6 +65,8 @@ export interface BoardRow {
   correct: number;
   wave?: number;
   stars?: number;
+  fish?: number;
+  best?: string;
 }
 
 export interface HostView {
@@ -75,7 +77,7 @@ export interface HostView {
   phase: Phase;
   serverNow: number;
   paused: boolean;
-  players: (BoardRow & { answered: number; bestStreak: number; hp?: number; downed?: boolean; x?: number; y?: number; a?: number; busted?: boolean; busts?: number })[];
+  players: (BoardRow & { answered: number; bestStreak: number; hp?: number; downed?: boolean; x?: number; y?: number; a?: number; busted?: boolean; busts?: number; last?: string })[];
   // Topptur
   qIndex: number;
   total: number;
@@ -110,6 +112,8 @@ export interface FinalStats {
   wave?: number;
   stars?: number;
   busts?: number;
+  fish?: number;
+  best?: string;
   missed: MissedQuestion[];
 }
 
@@ -178,6 +182,10 @@ export interface FjallReport {
   y?: number;
   a?: number;
   busted?: boolean;
+  // Isfiske
+  fish?: number;
+  best?: string;
+  last?: string;
 }
 
 export type PlayerAction =

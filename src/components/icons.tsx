@@ -137,6 +137,12 @@ const P: Record<string, ReactNode> = {
       <path d="M7.5 16.5v2M16.5 16.5v2" />
     </>
   ),
+  fish: (
+    <>
+      <path d="M3 12c2.5-4 6-5.5 9.5-5.5 3.5 0 6 2.5 7.5 5.5-1.5 3-4 5.5-7.5 5.5-3.5 0-7-1.5-9.5-5.5zM3 12l-1.5-3M3 12l-1.5 3" />
+      <circle cx="16" cy="11" r="0.9" fill="currentColor" />
+    </>
+  ),
 };
 
 export type IconName = keyof typeof P;

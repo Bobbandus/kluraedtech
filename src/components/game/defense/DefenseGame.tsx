@@ -21,7 +21,7 @@ import {
   type TowerKind,
 } from "@/lib/game/defense";
 import type { ActResult, FjallAnswerResult, PlayerAction, PlayerView, PublicQuestion } from "@/lib/rooms/types";
-import { Icon } from "@/components/icons";
+import { Icon, type IconName } from "@/components/icons";
 import { OPT_COLORS, OPT_KEYS } from "../parts";
 import { DefenseRenderer } from "./render";
 import { drawTowerIcon } from "./sprites";
@@ -332,7 +332,25 @@ export default function DefenseGame({ view, act, clockOffset }: { view: PlayerVi
 
 /* ---------- Frågor i egen takt ---------- */
 
-function QuestionPanel({ act, disabled, streak, onCorrect: onRight }: { act: (a: PlayerAction) => Promise<ActResult>; disabled: boolean; streak: number; onCorrect: (streak: number) => void }) {
+export function QuestionPanel({
+  act,
+  disabled,
+  streak,
+  onCorrect: onRight,
+  label = "Svara för att tjäna virke",
+  icon = "log",
+  reward = (st: number) => answerReward(st),
+  unit = "virke",
+}: {
+  act: (a: PlayerAction) => Promise<ActResult>;
+  disabled: boolean;
+  streak: number;
+  onCorrect: (streak: number) => void;
+  label?: string;
+  icon?: IconName;
+  reward?: (streak: number) => number;
+  unit?: string;
+}) {
   const [q, setQ] = useState<PublicQuestion | null>(null);
   const [unlocked, setUnlocked] = useState(false);
   const [picked, setPicked] = useState<number | null>(null);
@@ -386,14 +404,14 @@ function QuestionPanel({ act, disabled, streak, onCorrect: onRight }: { act: (a:
     return () => window.removeEventListener("keydown", onKey);
   });
 
-  const nextReward = answerReward(streak + 1);
+  const nextReward = reward(streak + 1);
 
   return (
     <section className={s.panel} aria-label="Fråga">
       <div className={s.panelHead}>
-        <span className="eyebrow">Svara för att tjäna virke</span>
+        <span className="eyebrow">{label}</span>
         <span className={s.reward}>
-          <Icon name="log" size={14} /> +{nextReward}
+          <Icon name={icon} size={14} /> +{nextReward}
         </span>
       </div>
       {disabled ? (
@@ -426,7 +444,7 @@ function QuestionPanel({ act, disabled, streak, onCorrect: onRight }: { act: (a:
           {res && (
             <div className={`${s.fb} ${res.correct ? s.fbOk : s.fbBad}`} role="status">
               {res.correct ? (
-                <strong>Rätt! +{answerReward(res.streak)} virke</strong>
+                <strong>Rätt! +{reward(res.streak)} {unit}</strong>
               ) : (
                 <>
                   <strong style={{ color: "var(--lingon-dark)" }}>Inte riktigt.</strong> {res.explanation ?? `Rätt svar: ${q.options[res.correctIndex]}.`}

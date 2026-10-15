@@ -14,6 +14,7 @@ import { Icon, type IconName } from "@/components/icons";
 import { LogoMark } from "@/components/brand";
 import ChasePreview from "@/components/game/chase/ChasePreview";
 import DefensePreview from "@/components/game/defense/DefensePreview";
+import FishPreview from "@/components/game/fishing/FishPreview";
 import { MountainScene } from "@/components/scene";
 import s from "./admin.module.css";
 
@@ -21,6 +22,7 @@ const SHOW_QUIZZES = ["manskliga-rattigheter", "demokrati-diktatur", "lag-och-ra
 
 const MODES: { id: GameMode; text: string; quiz: string }[] = [
   { id: "jakt", text: "Eleven kör en egen bil genom stan med polisen efter sig. Rätt svar ger stjärnor som multiplicerar poängen.", quiz: "manskliga-rattigheter" },
+  { id: "fiske", text: "Eleven pimplar genom isen. Rätt svar ger bete och längre lina – de värdefulla fiskarna simmar djupast.", quiz: "syslojd" },
   { id: "fjall", text: "Varje elev försvarar sin stuga mot troll. Rätt svar ger virke att bygga torn för.", quiz: "kroppen" },
   { id: "topptur", text: "Alla svarar på samma fråga samtidigt och klättrar mot toppen. Läraren styr tempot.", quiz: "lag-och-ratt" },
 ];
@@ -52,7 +54,7 @@ type View = "elev" | "projektor" | "delad";
 export default function AdminPage() {
   const router = useRouter();
   const student = useStore((x) => x.student);
-  const [quiz, setQuiz] = useState<Record<GameMode, string>>({ jakt: MODES[0].quiz, fjall: MODES[1].quiz, topptur: MODES[2].quiz });
+  const [quiz, setQuiz] = useState<Record<GameMode, string>>({ jakt: MODES[0].quiz, fiske: MODES[1].quiz, fjall: MODES[2].quiz, topptur: MODES[3].quiz });
   const [busy, setBusy] = useState<string | null>(null);
   const quizzes = ALL_QUIZZES.filter((q) => SHOW_QUIZZES.includes(q.id));
 
@@ -108,6 +110,8 @@ export default function AdminPage() {
                   <div className={s.preview}>
                     {m.id === "jakt" ? (
                       <ChasePreview />
+                    ) : m.id === "fiske" ? (
+                      <FishPreview />
                     ) : m.id === "fjall" ? (
                       <DefensePreview />
                     ) : (

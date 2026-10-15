@@ -1,0 +1,143 @@
+.lake {
+  background: #0d2b42;
+  box-shadow: 0 0 0 3px #fff, 0 10px 30px rgba(13, 43, 66, 0.25);
+}
+.canvas {
+  display: block;
+  cursor: crosshair !important;
+  image-rendering: pixelated;
+  touch-action: none;
+}
+.score {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 6px;
+  height: 40px;
+  padding: 0 14px;
+  border-radius: 12px;
+  background: var(--sol);
+  color: var(--ink);
+  font-family: var(--font-display);
+  font-weight: 900;
+  font-size: 1.35rem;
+  line-height: 40px;
+  font-variant-numeric: tabular-nums;
+}
+.score small {
+  font-size: 0.8rem;
+  font-weight: 800;
+  opacity: 0.7;
+}
+.worm {
+  display: inline-block;
+  width: 14px;
+  height: 8px;
+  border-radius: 6px;
+  background: linear-gradient(90deg, #e86a6a 0 30%, #c94a52 30% 45%, #e86a6a 45% 70%, #c94a52 70% 85%, #e86a6a 85%);
+  box-shadow: 0 0 0 1.5px rgba(0, 0, 0, 0.25);
+}
+.noBait {
+  background: var(--lingon) !important;
+  animation: pulse-soft 1.2s ease-in-out infinite;
+}
+.goldBanner {
+  background: linear-gradient(90deg, #d98a12, #ffc93a);
+  color: #3a2303;
+}
+.outOfBait {
+  position: absolute;
+  left: 50%;
+  bottom: 14px;
+  transform: translateX(-50%);
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  border-radius: 999px;
+  background: rgba(10, 30, 44, 0.85);
+  color: #fff;
+  font-weight: 800;
+  font-size: 0.95rem;
+  white-space: nowrap;
+  pointer-events: none;
+}
+.book {
+  display: grid;
+  grid-template-columns: repeat(8, minmax(0, 1fr));
+  gap: 6px;
+}
+.bookItem {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 6px 4px 5px;
+  border-radius: 14px;
+  background: var(--card);
+  border: 2px solid var(--line);
+  text-align: center;
+  min-width: 0;
+}
+.got {
+  border-color: #8fd0ea;
+  background: #f1fafd;
+}
+.fishIcon {
+  height: 22px;
+  width: auto;
+  image-rendering: pixelated;
+}
+.fishDim {
+  filter: brightness(0) opacity(0.22);
+}
+.bookName {
+  font-size: 0.72rem;
+  font-weight: 800;
+  line-height: 1.1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+.bookVal {
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: var(--ink-3);
+  font-variant-numeric: tabular-nums;
+}
+@media (max-width: 640px) {
+  .book {
+    display: none;
+  }
+  .outOfBait {
+    font-size: 0.8rem;
+  }
+}
+.feed {
+  position: absolute;
+  left: 20px;
+  bottom: 20px;
+  display: flex;
+  flex-direction: column-reverse;
+  gap: 8px;
+  max-width: min(460px, 60vw);
+}
+.feedItem {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 14px 8px 10px;
+  border-radius: 14px;
+  background: rgba(16, 22, 24, 0.78);
+  color: #fff;
+  font-weight: 700;
+  font-size: 1.05rem;
+  animation: feed-in 0.5s var(--ease-spring);
+}
+.feedItem:first-child {
+  background: linear-gradient(90deg, rgba(217, 138, 18, 0.95), rgba(16, 22, 24, 0.85));
+}
+@keyframes feed-in {
+  from { opacity: 0; transform: translateY(14px) scale(0.95); }
+  to { opacity: 1; transform: none; }
+}

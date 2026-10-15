@@ -54,10 +54,12 @@ export default function StudentResult() {
             {m.quizTitle}
           </p>
           <h1 style={{ marginTop: 6 }}>
-            {m.mode === "jakt" ? ((m.stars ?? 0) >= 5 ? "Polisen hängde inte med!" : m.personalBest ? "Nytt personbästa!" : "Bra kört!") : m.mode === "fjall" ? (acc >= 75 ? "Stugan stod pall!" : m.personalBest ? "Nytt personbästa!" : "Bra försvarat!") : m.reachedSummit ? "Du nådde toppen!" : acc >= 70 ? "Starkt klättrat!" : m.personalBest ? "Nytt personbästa!" : "Bra kämpat!"}
+            {m.mode === "fiske" ? ((m.best === "gadda" || m.best === "guld") ? "Vilken fångst!" : m.personalBest ? "Nytt personbästa!" : "Fint fiskat!") : m.mode === "jakt" ? ((m.stars ?? 0) >= 5 ? "Polisen hängde inte med!" : m.personalBest ? "Nytt personbästa!" : "Bra kört!") : m.mode === "fjall" ? (acc >= 75 ? "Stugan stod pall!" : m.personalBest ? "Nytt personbästa!" : "Bra försvarat!") : m.reachedSummit ? "Du nådde toppen!" : acc >= 70 ? "Starkt klättrat!" : m.personalBest ? "Nytt personbästa!" : "Bra kämpat!"}
           </h1>
           <p className="muted" style={{ marginTop: 6 }}>
-            {m.mode === "jakt"
+            {m.mode === "fiske"
+              ? `${m.rank <= m.total / 2 ? `Plats ${m.rank} av ${m.total} · ` : ""}${m.fish ?? 0} fiskar · ${m.score.toLocaleString("sv-SE")} poäng`
+              : m.mode === "jakt"
               ? `${m.rank <= m.total / 2 ? `Plats ${m.rank} av ${m.total} · ` : ""}${m.score.toLocaleString("sv-SE")} poäng · ★ ${m.stars ?? 0}`
               : m.mode === "fjall"
               ? `${m.rank <= m.total / 2 ? `Plats ${m.rank} av ${m.total} · ` : ""}${m.wave ?? 0} vågor · ${m.score.toLocaleString("sv-SE")} poäng`
@@ -68,7 +70,7 @@ export default function StudentResult() {
 
           <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 10, marginTop: 22 }}>
             {[
-              { v: m.mode === "fjall" || m.mode === "jakt" ? String(m.correct) : `${m.correct}/${m.questions}`, l: "rätt svar" },
+              { v: m.mode === "fjall" || m.mode === "jakt" || m.mode === "fiske" ? String(m.correct) : `${m.correct}/${m.questions}`, l: "rätt svar" },
               { v: `${acc} %`, l: "träffsäkerhet" },
               { v: String(m.bestStreak), l: "längsta rad" },
             ].map((x) => (

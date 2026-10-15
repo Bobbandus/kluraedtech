@@ -31,9 +31,9 @@ function demoRoomFor(code: string): Room {
   let room = rooms.get(code);
   if (room) return room;
   const n = code.split("").reduce((a, c) => a + Number(c), 0);
-  // Sista siffran väljer läge: 0, 3, 6, 9 = Biljakt, 2, 4, 8 = Fjällförsvar, övriga = Topptur
+  // Sista siffran väljer läge: 0, 3, 6, 9 = Biljakt, 1, 7 = Isfiske, 2, 4, 8 = Fjällförsvar, övriga = Topptur
   const last = Number(code[code.length - 1]);
-  const mode = last % 3 === 0 ? "jakt" : last % 2 === 0 ? "fjall" : "topptur";
+  const mode = last % 3 === 0 ? "jakt" : last === 1 || last === 7 ? "fiske" : last % 2 === 0 ? "fjall" : "topptur";
   room = new Room(code, toRoomQuiz(ROTATION[n % ROTATION.length]), { mode, energy: "standard", longerTime: false, randomNames: false, minutes: 5 }, Date.now(), {
     bots: 23,
     autoHost: true,
