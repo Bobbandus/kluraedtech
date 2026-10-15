@@ -6,7 +6,7 @@ import type { Subject } from "@/components/cover";
  * LocalTransport (demo i webbläsaren) och av servern (src/server).
  */
 
-export type GameMode = "topptur" | "fjall" | "jakt" | "fiske" | "slalom";
+export type GameMode = "topptur" | "fjall" | "jakt" | "fiske" | "slalom" | "straff";
 
 /** Lägen där varje elev svarar i egen takt (inte gemensamma frågor). */
 export const selfPaced = (m: GameMode) => m !== "topptur";
@@ -115,6 +115,8 @@ export interface FinalStats {
   fish?: number;
   best?: string;
   gates?: number;
+  goals?: number;
+  shots?: number;
   missed: MissedQuestion[];
 }
 

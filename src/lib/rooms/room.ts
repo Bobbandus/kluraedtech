@@ -37,6 +37,7 @@ import {
   type DefenseState,
 } from "@/lib/game/defense";
 import { CELL, POINTS, createCity, multiplier, seedFromCode, type City } from "@/lib/game/chase";
+import { botGoalChance, multiplier as straffMult, scoreCap as straffCap } from "@/lib/game/penalty";
 import { MAX_LEVEL as SLALOM_MAX, botRate, scoreCap as slalomCap } from "@/lib/game/slalom";
 import { FISH, MAX_BAIT, START_BAIT, baitReward, botCatch, scoreCap, type FishKind } from "@/lib/game/fishing";
 import { checkName } from "@/lib/moderation";
@@ -85,6 +86,8 @@ interface RoomPlayer extends PlayerState {
   angler?: { bait: number; nextCatchAt: number };
   /** Slalom-bot */
   skier?: { skill: number };
+  /** Straff-bot */
+  kicker?: { skill: number; streak: number };
 }
 
 function token(rng: Rng): string {
@@ -203,7 +206,7 @@ export class Room {
 
   private scoreOf(p: RoomPlayer) {
     const m = this.settings.mode;
-    return m === "fjall" ? this.fjallScore(p) : m === "jakt" || m === "fiske" || m === "slalom" ? Math.floor(p.report.score) : p.score;
+    return m === "fjall" ? this.fjallScore(p) : m === "jakt" || m === "fiske" || m === "slalom" || m === "straff" ? Math.floor(p.report.score) : p.score;
   }
 
   private get selfPaced() {
@@ -310,6 +313,7 @@ export class Room {
         if (this.settings.mode === "jakt") this.initBotChase(p, now);
         else if (this.settings.mode === "fiske") this.initBotFish(p, now);
         else if (this.settings.mode === "slalom") this.initBotSlalom(p, now);
+        else if (this.settings.mode === "straff") this.initBotStraff(p, now);
         else this.initBotDefense(p, now);
       }
     } else {
@@ -479,6 +483,18 @@ export class Room {
       case "fjall_report": {
         const s = action.state;
         if (!s || typeof s !== "object") return { ok: false, error: "Ogiltig rapport." };
+        if (this.settings.mode === "straff") {
+          const goals = Math.max(0, Math.min(p.correct, Math.floor(Number(s.wave) || 0)));
+          p.report = {
+            wave: goals,
+            hp: Math.max(goals, Math.min(p.correct, Math.floor(Number(s.hp) || 0))),
+            score: Math.max(0, Math.min(straffCap(p.correct), Math.floor(Number(s.score) || 0))),
+            downed: false,
+            stars: Math.max(0, Math.min(99, Math.floor(Number(s.stars) || 0))),
+          };
+          this.bump();
+          return { ok: true };
+        }
         if (this.settings.mode === "slalom") {
           const secs = (now - (this.phaseAt || now)) / 1000;
           p.report = {
@@ -624,6 +640,35 @@ export class Room {
     }
   }
 
+  private initBotStraff(p: RoomPlayer, now: number) {
+    p.kicker = { skill: Math.max(0, Math.min(1, 0.5 + gaussian(this.rng) * 0.25)), streak: 0 };
+    p.report = { wave: 0, hp: 0, score: 0, downed: false, stars: 0 };
+    p.nextAnswerAt = now + this.botReadTime(p) * 1000;
+  }
+
+  private stepBotStraff(p: RoomPlayer) {
+    if (p.nextAnswerAt === undefined || this.lastSim < p.nextAnswerAt) return;
+    const k = p.kicker!;
+    const r = p.report;
+    const qi = this.drawCard(p);
+    const q = this.quiz.questions[qi];
+    const ans = botAnswer(this.rng, p.profile!, { options: q.options.length, correct: q.correct, time: 30 }, { timeLimit: 999 });
+    const option = ans.option ?? 0;
+    const correct = option === q.correct;
+    this.fjallRecord(p, qi, option, correct);
+    if (correct) {
+      k.streak++;
+      r.hp++;
+      if (this.rng() < botGoalChance(k.skill)) {
+        r.wave++;
+        r.score += Math.round((this.rng() < 0.25 ? 150 : 100) * straffMult(k.streak));
+      }
+    } else k.streak = 0;
+    r.stars = k.streak;
+    // Skott + animation tar några sekunder
+    p.nextAnswerAt = this.lastSim + (this.botReadTime(p) + (correct ? 4.5 : 3.4)) * 1000;
+  }
+
   private initBotSlalom(p: RoomPlayer, now: number) {
     p.skier = { skill: Math.max(0, Math.min(1, 0.35 + (1 - (p.profile?.pace ?? 0.4)) * 0.4 + gaussian(this.rng) * 0.15)) };
     p.report = { wave: 0, hp: 0, score: 0, downed: false, stars: 0 };
@@ -701,6 +746,10 @@ export class Room {
     while (this.lastSim + DT * 1000 <= until) {
       this.lastSim += DT * 1000;
       for (const p of this.players) {
+        if (p.isBot && p.kicker) {
+          this.stepBotStraff(p);
+          continue;
+        }
         if (p.isBot && p.skier) {
           this.stepBotSlalom(p, DT);
           continue;
@@ -923,6 +972,8 @@ export class Room {
       wave: this.settings.mode === "fjall" ? p.report.wave : undefined,
       stars: jakt || slalom ? this.starsOf(p) : undefined,
       gates: slalom ? Math.floor(p.report.wave) : undefined,
+      goals: this.settings.mode === "straff" ? p.report.wave : undefined,
+      shots: this.settings.mode === "straff" ? p.report.hp : undefined,
       busts: jakt ? (p.report.busts ?? 0) : undefined,
       fish: this.settings.mode === "fiske" ? (p.report.fish ?? 0) : undefined,
       best: this.settings.mode === "fiske" ? p.report.best : undefined,

@@ -27,13 +27,15 @@ export interface Quest {
 export interface LastMatch {
   code: string;
   quizTitle: string;
-  mode?: "topptur" | "fjall" | "jakt" | "fiske" | "slalom";
+  mode?: "topptur" | "fjall" | "jakt" | "fiske" | "slalom" | "straff";
   wave?: number;
   stars?: number;
   busts?: number;
   fish?: number;
   best?: string;
   gates?: number;
+  goals?: number;
+  shots?: number;
   rank: number;
   total: number;
   correct: number;

@@ -23,6 +23,7 @@ import { sfx } from "@/lib/sound";
 import DefenseGame from "./defense/DefenseGame";
 import FishGame from "./fishing/FishGame";
 import SlalomGame from "./slalom/SlalomGame";
+import PenaltyGame from "./penalty/PenaltyGame";
 import s from "./game.module.css";
 
 export default function StudentGame({ code }: { code: string }) {
@@ -251,6 +252,7 @@ function Play({ code, token, onLost }: { code: string; token: string; onLost: ()
   if (view.mode === "jakt") return <ChaseGame view={view} act={act} clockOffset={offset} />;
   if (view.mode === "fiske") return <FishGame view={view} act={act} clockOffset={offset} />;
   if (view.mode === "slalom") return <SlalomGame view={view} act={act} clockOffset={offset} />;
+  if (view.mode === "straff") return <PenaltyGame view={view} act={act} clockOffset={offset} />;
   return <Topptur view={view} act={act} offset={offset} />;
 }
 
@@ -294,6 +296,8 @@ function Lobby({ view }: { view: PlayerView }) {
           <p className="muted" style={{ marginTop: 10, fontSize: "0.94rem" }}>
             {view.mode === "jakt"
               ? `Kör undan polisen i ${view.settings.minutes} minuter. Rätt svar ger en stjärna – varje stjärna höjer din poängmultiplikator. Håll mellanslag för att bli spöke och byta bil, E för att kliva ur. Blir du fast tappar du en stjärna.`
+              : view.mode === "straff"
+              ? `Straffläggning i ${view.settings.minutes} minuter. Varje rätt svar ger en straffspark – välj sida och höjd med timing. Rätt i rad höjer multiplikatorn, och krysset ger extra poäng.`
               : view.mode === "slalom"
               ? `Åk nerför fjället i ${view.settings.minutes} minuter. Varje port ger poäng, och i guldportarna kommer en fråga – rätt svar höjer multiplikatorn. Undvik granar och stenar!`
               : view.mode === "fiske"
@@ -632,6 +636,7 @@ export function computeEarned(final: FinalStats, mode: GameMode, bestAccuracy: n
   if (final.bestStreak >= 5) earned.push({ label: `${final.bestStreak} rätt i rad`, amount: 10 });
   if (personalBest) earned.push({ label: "Nytt personbästa", amount: 15 });
   if (mode === "fjall" && (final.wave ?? 0) >= 5) earned.push({ label: `Klarade ${final.wave} vågor`, amount: Math.min(25, (final.wave ?? 0) * 2) });
+  if (mode === "straff" && (final.goals ?? 0) >= 3) earned.push({ label: `${final.goals} mål`, amount: Math.min(25, (final.goals ?? 0) * 3) });
   if (mode === "slalom" && (final.gates ?? 0) >= 20) earned.push({ label: `${final.gates} portar`, amount: Math.min(25, Math.floor((final.gates ?? 0) / 4)) });
   if (mode === "fiske" && (final.fish ?? 0) >= 5) earned.push({ label: `${final.fish} fiskar`, amount: Math.min(25, (final.fish ?? 0) * 2) });
   if (mode === "jakt" && (final.stars ?? 0) >= 3) earned.push({ label: `${final.stars} stjärnor`, amount: Math.min(25, (final.stars ?? 0) * 3) });
@@ -664,6 +669,8 @@ function Finish({ view }: { view: PlayerView }) {
       busts: f.busts,
       fish: f.fish,
       gates: f.gates,
+      goals: f.goals,
+      shots: f.shots,
       best: f.best,
       earned,
       xp: f.correct * 10 + 30,
@@ -688,6 +695,11 @@ function Finish({ view }: { view: PlayerView }) {
           {view.mode !== "topptur" ? "Tiden är ute!" : "Matchen är slut"}
         </h1>
         {view.final?.wave !== undefined && <p className="muted">Du försvarade stugan i {view.final.wave} vågor.</p>}
+        {view.final?.goals !== undefined && (
+          <p className="muted">
+            Du gjorde {view.final.goals} mål på {view.final.shots ?? 0} straffar och fick {view.final.score.toLocaleString("sv-SE")} poäng.
+          </p>
+        )}
         {view.final?.gates !== undefined && (
           <p className="muted">
             Du åkte genom {view.final.gates} portar och fick {view.final.score.toLocaleString("sv-SE")} poäng.

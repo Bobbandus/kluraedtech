@@ -16,6 +16,7 @@ import ChasePreview from "@/components/game/chase/ChasePreview";
 import DefensePreview from "@/components/game/defense/DefensePreview";
 import FishPreview from "@/components/game/fishing/FishPreview";
 import SlalomPreview from "@/components/game/slalom/SlalomPreview";
+import PenaltyPreview from "@/components/game/penalty/PenaltyPreview";
 import { MountainScene } from "@/components/scene";
 import s from "./admin.module.css";
 
@@ -23,6 +24,7 @@ const SHOW_QUIZZES = ["manskliga-rattigheter", "demokrati-diktatur", "lag-och-ra
 
 const MODES: { id: GameMode; text: string; quiz: string }[] = [
   { id: "jakt", text: "Eleven kör en egen bil genom stan med polisen efter sig. Rätt svar ger stjärnor som multiplicerar poängen.", quiz: "manskliga-rattigheter" },
+  { id: "straff", text: "Varje rätt svar ger en straffspark. Eleven siktar med timing – krysset ger extra poäng men är lätt att missa.", quiz: "hallbar-utveckling" },
   { id: "slalom", text: "Eleven åker nerför fjället genom portar. I guldportarna kommer en fråga – rätt svar höjer multiplikatorn.", quiz: "demokrati-diktatur" },
   { id: "fiske", text: "Eleven pimplar genom isen. Rätt svar ger bete och längre lina – de värdefulla fiskarna simmar djupast.", quiz: "syslojd" },
   { id: "fjall", text: "Varje elev försvarar sin stuga mot troll. Rätt svar ger virke att bygga torn för.", quiz: "kroppen" },
@@ -56,7 +58,7 @@ type View = "elev" | "projektor" | "delad";
 export default function AdminPage() {
   const router = useRouter();
   const student = useStore((x) => x.student);
-  const [quiz, setQuiz] = useState<Record<GameMode, string>>({ jakt: MODES[0].quiz, slalom: MODES[1].quiz, fiske: MODES[2].quiz, fjall: MODES[3].quiz, topptur: MODES[4].quiz });
+  const [quiz, setQuiz] = useState<Record<GameMode, string>>({ jakt: MODES[0].quiz, straff: MODES[1].quiz, slalom: MODES[2].quiz, fiske: MODES[3].quiz, fjall: MODES[4].quiz, topptur: MODES[5].quiz });
   const [busy, setBusy] = useState<string | null>(null);
   const quizzes = ALL_QUIZZES.filter((q) => SHOW_QUIZZES.includes(q.id));
 
@@ -112,6 +114,8 @@ export default function AdminPage() {
                   <div className={s.preview}>
                     {m.id === "jakt" ? (
                       <ChasePreview />
+                    ) : m.id === "straff" ? (
+                      <PenaltyPreview />
                     ) : m.id === "slalom" ? (
                       <SlalomPreview />
                     ) : m.id === "fiske" ? (
