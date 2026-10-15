@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
+import { onScreen } from "@/lib/visible";
 import { answer, autopilot, createChase, step } from "@/lib/game/chase";
 import { ChaseRenderer } from "./render";
 
@@ -21,6 +22,7 @@ export default function ChasePreview({ className }: { className?: string }) {
       step(st, 1 / 30);
     }
     const el = wrap.current!;
+    const vis = onScreen(el);
     const r = new ChaseRenderer(canvas.current!);
     const fit = () => r.resize(el.clientWidth, Math.round((el.clientWidth * 2) / 3));
     fit();
@@ -33,6 +35,10 @@ export default function ChasePreview({ className }: { className?: string }) {
     const loop = (now: number) => {
       const dt = Math.min(0.05, (now - last) / 1000);
       last = now;
+      if (!vis.visible) {
+        raf = requestAnimationFrame(loop);
+        return;
+      }
       if (!reduce) {
         autopilot(st, 0.9);
         step(st, dt);
@@ -46,6 +52,7 @@ export default function ChasePreview({ className }: { className?: string }) {
     return () => {
       cancelAnimationFrame(raf);
       ro.disconnect();
+      vis.stop();
     };
   }, []);
   return (

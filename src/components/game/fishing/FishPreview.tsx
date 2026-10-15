@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
+import { onScreen } from "@/lib/visible";
 import { FISH, MAX_BAIT, createFishing, setTarget, step, type FishingState } from "@/lib/game/fishing";
 import { FishRenderer } from "./render";
 
@@ -25,6 +26,7 @@ export default function FishPreview({ className }: { className?: string }) {
     const g = createFishing(4242);
     g.correct = 9;
     const el = wrap.current!;
+    const vis = onScreen(el);
     const r = new FishRenderer(canvas.current!);
     const fit = () => r.resize(el.clientWidth);
     fit();
@@ -40,6 +42,10 @@ export default function FishPreview({ className }: { className?: string }) {
     const loop = (now: number) => {
       const dt = Math.min(0.05, (now - last) / 1000);
       last = now;
+      if (!vis.visible) {
+        raf = requestAnimationFrame(loop);
+        return;
+      }
       if (!reduce) {
         autopilot(g, now / 1000);
         step(g, dt);
@@ -51,6 +57,7 @@ export default function FishPreview({ className }: { className?: string }) {
     return () => {
       cancelAnimationFrame(raf);
       ro.disconnect();
+      vis.stop();
     };
   }, []);
   return (

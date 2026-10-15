@@ -202,7 +202,8 @@ export class SlalomRenderer {
     this.b = this.buf.getContext("2d")!;
   }
 
-  resize(cssW: number, cssH: number) {
+  /** `viewH`: hur många världsenheter på höjden som minst ska synas på smala ytor */
+  resize(cssW: number, cssH: number, viewH = 330) {
     this.dpr = Math.min(2, window.devicePixelRatio || 1);
     this.cssW = Math.max(1, Math.round(cssW));
     this.cssH = Math.max(1, Math.round(cssH));
@@ -211,7 +212,7 @@ export class SlalomRenderer {
     this.canvas.width = Math.round(this.cssW * this.dpr);
     this.canvas.height = Math.round(this.cssH * this.dpr);
     // Smala skärmar: zooma in och följ åkaren i sidled
-    this.scale = Math.max(Math.min(this.cssW / 262, this.cssH / 250), Math.min(2.4, this.cssH / 330));
+    this.scale = Math.max(Math.min(this.cssW / 262, this.cssH / 250), Math.min(2.4, this.cssH / viewH));
     this.vw = Math.ceil(this.cssW / this.scale);
     this.vh = Math.ceil(this.cssH / this.scale);
     this.buf.width = this.vw;

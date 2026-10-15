@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
+import { onScreen } from "@/lib/visible";
 import { build, createDefense, step, upgrade } from "@/lib/game/defense";
 import { DefenseRenderer } from "./render";
 
@@ -20,6 +21,7 @@ export default function DefensePreview({ className }: { className?: string }) {
     for (let i = 0; i < 200; i++) step(st, 0.05);
     st.events = [];
     const el = wrap.current!;
+    const vis = onScreen(el);
     const r = new DefenseRenderer(canvas.current!);
     const fit = () => r.resize(el.clientWidth);
     fit();
@@ -31,6 +33,10 @@ export default function DefensePreview({ className }: { className?: string }) {
     const loop = (now: number) => {
       const dt = Math.min(0.1, (now - last) / 1000);
       last = now;
+      if (!vis.visible) {
+        raf = requestAnimationFrame(loop);
+        return;
+      }
       if (!reduce) step(st, dt);
       if (st.hp < 10) st.hp = 20;
       r.draw(st, { hover: null, placing: null, selectedTowerId: null, reducedMotion: reduce }, dt);
@@ -40,6 +46,7 @@ export default function DefensePreview({ className }: { className?: string }) {
     return () => {
       cancelAnimationFrame(raf);
       ro.disconnect();
+      vis.stop();
     };
   }, []);
   return (

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
+import { onScreen } from "@/lib/visible";
 import { createSlalom, resume, step, answer, type SlalomState } from "@/lib/game/slalom";
 import { SlalomRenderer } from "./render";
 
@@ -31,8 +32,9 @@ export default function SlalomPreview({ className }: { className?: string }) {
       step(g, 1 / 30);
     }
     const el = wrap.current!;
+    const vis = onScreen(el);
     const r = new SlalomRenderer(canvas.current!);
-    const fit = () => r.resize(el.clientWidth, el.clientHeight);
+    const fit = () => r.resize(el.clientWidth, el.clientHeight, 160);
     fit();
     const ro = new ResizeObserver(fit);
     ro.observe(el);
@@ -42,6 +44,10 @@ export default function SlalomPreview({ className }: { className?: string }) {
     const loop = (now: number) => {
       const dt = Math.min(0.05, (now - last) / 1000);
       last = now;
+      if (!vis.visible) {
+        raf = requestAnimationFrame(loop);
+        return;
+      }
       if (!reduce) {
         autopilot(g);
         step(g, dt);
@@ -53,6 +59,7 @@ export default function SlalomPreview({ className }: { className?: string }) {
     return () => {
       cancelAnimationFrame(raf);
       ro.disconnect();
+      vis.stop();
     };
   }, []);
   return (
