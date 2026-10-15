@@ -1,4 +1,5 @@
 .shell {
+  container-type: size;
   background: #232c36;
 }
 .hud {
@@ -122,7 +123,7 @@
     opacity: 1;
   }
 }
-@media (max-width: 640px) {
+@container (max-width: 640px) {
   .prompt {
     top: auto;
     bottom: max(28px, env(safe-area-inset-bottom));

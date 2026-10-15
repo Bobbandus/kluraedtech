@@ -483,7 +483,7 @@
 .qText {
   margin: 0;
   color: #fff;
-  font-size: clamp(1.1rem, 2.4vw, 1.45rem);
+  font-size: clamp(1.05rem, 2.6cqw, 1.45rem);
   font-weight: 800;
   line-height: 1.25;
 }
@@ -860,5 +860,19 @@
   }
   .actText small {
     display: none;
+  }
+}
+
+/* Frågan anpassar sig efter sin egen bredd (t.ex. elevmobilen i delad skärm) */
+.qbar {
+  container-type: inline-size;
+}
+@container (max-width: 640px) {
+  .opts,
+  .opts[data-n="3"],
+  .opts[data-n="4"],
+  .opts[data-n="5"],
+  .opts[data-n="6"] {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }

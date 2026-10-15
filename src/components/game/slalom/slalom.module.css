@@ -1,4 +1,5 @@
 .shell {
+  container-type: size;
   background: #e6eff5;
 }
 .scoreHud {
@@ -100,7 +101,7 @@
   font-size: 0.8rem;
   font-weight: 900;
 }
-@media (max-width: 640px) {
+@container (max-width: 640px) {
   .chips {
     top: auto;
     bottom: max(74px, env(safe-area-inset-bottom));
