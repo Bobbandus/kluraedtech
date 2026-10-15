@@ -28,7 +28,7 @@ export default function SlalomGame({ view, act, clockOffset }: { view: PlayerVie
   const reduced = useStore((x) => x.prefs.reducedMotion);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const shellRef = useRef<HTMLDivElement>(null);
-  const game = useRef<SlalomState>(createSlalom(Math.floor(Math.random() * 1e6)));
+  const game = useRef<SlalomState>(createSlalom(Math.floor(Math.random() * 1e6), view.settings.energy));
   const [, setFrame] = useState(0);
   const [asking, setAsking] = useState(false);
   const [count, setCount] = useState(3);

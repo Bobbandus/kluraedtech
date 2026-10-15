@@ -243,9 +243,9 @@ const MODE_POINTS: Partial<Record<GameMode, Record<Energy, string[]>>> = {
     fullfart: ["Fler och snabbare poliser", "Polisen skjuter från första stjärnan", "Kortare tid mellan frågorna", "Topplista och placering"],
   },
   slalom: {
-    lugn: ["Inga namn på projektorn", "Projektorn visar klassens portar", "Eleven fokuserar på sin åkning", "Pallen visar tre namn"],
+    lugn: ["Färre hinder och lugnare fart", "Inga namn på projektorn", "Projektorn visar klassens portar", "Pallen visar tre namn"],
     standard: ["Störtlopp med namn på projektorn", "Eleven ser sin placering", "Pallen visar fem namn", "Rekommenderas för de flesta"],
-    fullfart: ["Mest tävling", "Störtlopp och placering", "Pallen visar fem namn", "Passar fredagar"],
+    fullfart: ["Snabbare åkning och fler hinder", "Störtlopp och placering", "Pallen visar fem namn", "Passar fredagar"],
   },
   fiske: {
     lugn: ["Ingen topplista på projektorn", "Projektorn visar klassens fångst", "Eleven fokuserar på sitt fiske", "Pallen visar tre namn"],

@@ -7,7 +7,7 @@
  * så den som kan mest får flest poäng – men man måste också åka bra.
  */
 
-import { mulberry32, type Rng } from "./engine";
+import { mulberry32, type Energy, type Rng } from "./engine";
 
 /** Pistens bredd (världsenheter = pixlar i pixelgrafiken) */
 export const W = 240;
@@ -55,6 +55,7 @@ export type SlalomEvent =
   | { t: number; type: "level"; up: boolean; level: number };
 
 export interface SlalomState {
+  energy: Energy;
   time: number;
   rng: Rng;
   x: number;
@@ -88,8 +89,9 @@ export interface SlalomState {
   boost: number;
 }
 
-export function createSlalom(seed: number): SlalomState {
+export function createSlalom(seed: number, energy: Energy = "standard"): SlalomState {
   const g: SlalomState = {
+    energy,
     time: 0,
     rng: mulberry32(seed),
     x: W / 2,
@@ -125,7 +127,8 @@ export function createSlalom(seed: number): SlalomState {
 
 /** Fart nerför: ökar med sträckan och multiplikatorn. */
 export function cruise(g: SlalomState) {
-  const base = 74 + Math.min(40, g.distance / 260);
+  const pace = g.energy === "lugn" ? 0.85 : g.energy === "fullfart" ? 1.12 : 1;
+  const base = (74 + Math.min(40, g.distance / 260)) * pace;
   return base * (1 + g.level * 0.04) * (g.tuck ? 1.18 : 1) * (g.boost > 0 ? 1.15 : 1);
 }
 
@@ -149,7 +152,7 @@ function generate(g: SlalomState, until: number) {
     }
     // Hinder mellan portarna (aldrig i själva portöppningen)
     if (!quiz && g.gateCount > 2 && (g.gateCount + 1) % QUIZ_EVERY !== 0) {
-      const n = r() < 0.3 ? 2 : 1;
+      const n = g.energy === "lugn" ? (r() < 0.45 ? 1 : 0) : r() < (g.energy === "fullfart" ? 0.5 : 0.3) ? 2 : 1;
       for (let k = 0; k < n; k++) {
         const roll = r();
         const kind: ObstacleKind = roll < 0.42 ? "tree" : roll < 0.62 ? "rock" : roll < 0.86 ? "mogul" : "jump";
