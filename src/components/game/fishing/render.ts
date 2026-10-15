@@ -444,6 +444,11 @@ export class FishRenderer {
       this.parts.push({ x: gm.hx, y: gm.hy - 30, vx: 0, vy: -20, life: 0.9, max: 0.9, kind: "text", text: "Napp!", color: "#ffe39a" });
       for (let i = 0; i < 6 * lots; i++) this.parts.push({ x: gm.hx, y: gm.hy, vx: (Math.random() - 0.5) * 40, vy: -30 - Math.random() * 30, life: 1.4, max: 1.4, kind: "bubble", color: "#d8f2fb" });
     }
+    if (e.type === "steal") {
+      this.shake = 0.4;
+      this.parts.push({ x: gm.hx, y: gm.hy - 30, vx: 0, vy: -20, life: 1.3, max: 1.3, kind: "text", text: "Gäddan snodde den!", color: "#ffb3a8" });
+      for (let i = 0; i < 10 * lots; i++) this.parts.push({ x: gm.hx, y: gm.hy, vx: (Math.random() - 0.5) * 60, vy: -30 - Math.random() * 40, life: 1.4, max: 1.4, kind: "bubble", color: "#d8f2fb" });
+    }
     if (e.type === "snag") this.parts.push({ x: gm.hx, y: gm.hy - 30, vx: 0, vy: -20, life: 1, max: 1, kind: "text", text: "Fast i något …", color: "#ffffff" });
     if (e.type === "bait") this.parts.push({ x: HOLE_X + 70, y: SURFACE - 60, vx: 0, vy: -24, life: 1.4, max: 1.4, kind: "text", text: `+${e.amount} bete`, color: "#ffb3b3" });
   }

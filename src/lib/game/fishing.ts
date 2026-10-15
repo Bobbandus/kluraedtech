@@ -6,7 +6,7 @@
  * Skicklighet: styr kroken förbi småfisken på väg ner till de stora.
  */
 
-import { mulberry32, type Rng } from "./engine";
+import { mulberry32, type Energy, type Rng } from "./engine";
 
 /* ---------- Värld ---------- */
 
@@ -89,9 +89,11 @@ export type FishEvent =
   | { t: number; type: "snag" }
   | { t: number; type: "gold" }
   | { t: number; type: "splash" }
-  | { t: number; type: "bait"; amount: number };
+  | { t: number; type: "bait"; amount: number }
+  | { t: number; type: "steal"; kind: FishKind };
 
 export interface FishingState {
+  energy: Energy;
   time: number;
   rng: Rng;
   fish: Fish[];
@@ -117,9 +119,10 @@ export interface FishingState {
   events: FishEvent[];
 }
 
-export function createFishing(seed: number): FishingState {
+export function createFishing(seed: number, energy: Energy = "standard"): FishingState {
   const rng = mulberry32(seed);
   const g: FishingState = {
+    energy,
     time: 0,
     rng,
     fish: [],
@@ -181,6 +184,12 @@ export function setTarget(g: FishingState, x: number, y: number) {
 }
 
 const HOOK_SPEED = 190;
+const REEL_SIDE = 120;
+
+/** Småfisk på kroken kan bli gäddmat (inte i lugnt läge) */
+function stealable(g: FishingState, f: Fish) {
+  return g.energy !== "lugn" && f.kind !== "gadda" && f.kind !== "kanga" && FISH[f.kind].value < 50;
+}
 
 export function step(g: FishingState, dt: number) {
   g.time += dt;
@@ -191,19 +200,35 @@ export function step(g: FishingState, dt: number) {
   if (g.reeling) {
     const f = g.hooked;
     const speed = f ? Math.max(90, 200 - FISH[f.kind].len * 1.7) : 260;
-    const dx = HOLE_X - g.hx;
-    const dy = SURFACE - 6 - g.hy;
-    const d = Math.hypot(dx, dy);
-    const m = Math.min(d, speed * dt);
-    if (d > 0.01) {
-      g.hx += (dx / d) * m;
-      g.hy += (dy / d) * m;
-    }
+    // Linan vevas upp; i sidled kan man styra undan (gäddan!) tills man är nära hålet
+    const depth = g.hy - SURFACE;
+    const pull = Math.max(0, Math.min(1, 1 - (depth - 10) / 50));
+    const wantX = clampHook(g, g.tx, g.hy).x * (1 - pull) + HOLE_X * pull;
+    const side = Math.max(-REEL_SIDE * dt, Math.min(REEL_SIDE * dt, wantX - g.hx));
+    g.hx += pull >= 1 ? Math.max(-260 * dt, Math.min(260 * dt, HOLE_X - g.hx)) : side;
+    g.hy = Math.max(SURFACE - 6, g.hy - speed * dt);
+    const d = Math.hypot(HOLE_X - g.hx, SURFACE - 6 - g.hy);
     if (f) {
       // Fisken sprattlar på kroken
       f.x = g.hx + Math.sin(g.time * 18) * 3;
       f.y = g.hy + FISH[f.kind].len * 0.35;
       f.dir = Math.sin(g.time * 7) > 0 ? 1 : -1;
+    }
+    if (f && stealable(g, f)) {
+      for (const p of g.fish) {
+        if (p.kind !== "gadda" || p === f) continue;
+        if (Math.hypot(p.x - f.x, p.y - f.y) < 10 + FISH.gadda.len * 0.35) {
+          // Gäddan tar fångsten – och betet
+          g.fish = g.fish.filter((x) => x !== f);
+          spawn(g, f.kind);
+          g.hooked = null;
+          g.reeling = false;
+          g.bait = Math.max(0, g.bait - 1);
+          p.shy = 4;
+          g.events.push({ t: g.time, type: "steal", kind: f.kind });
+          break;
+        }
+      }
     }
     if (d < 2) land(g);
   } else {
@@ -234,6 +259,20 @@ export function step(g: FishingState, dt: number) {
   for (const f of g.fish) {
     if (f === g.hooked) continue;
     const info = FISH[f.kind];
+    // Gäddan jagar småfisk som sitter på kroken
+    if (f.kind === "gadda" && g.hooked && stealable(g, g.hooked) && f.shy <= 0) {
+      const dx = g.hooked.x - f.x;
+      const dy = g.hooked.y - f.y;
+      const dist = Math.hypot(dx, dy);
+      if (dist < 120) {
+        const sp = info.speed * 2.2;
+        f.x += (dx / (dist || 1)) * sp * dt;
+        f.y += (dy / (dist || 1)) * sp * dt;
+        f.dir = dx >= 0 ? 1 : -1;
+        f.y = Math.max(SURFACE + 8, Math.min(BOTTOM - 6, f.y));
+        continue;
+      }
+    }
     if (f.kind === "kanga") {
       // Kängan ligger still. Fastnar kroken i den drar man upp den.
       if (!g.reeling && Math.hypot(f.x - g.hx, f.y - g.hy) < 13) {

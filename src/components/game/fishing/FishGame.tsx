@@ -48,7 +48,7 @@ export default function FishGame({ view, act, clockOffset }: { view: PlayerView;
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const wrapRef = useRef<HTMLDivElement>(null);
   const renderer = useRef<FishRenderer | null>(null);
-  const game = useRef<FishingState>(createFishing(Math.floor(Math.random() * 1e6)));
+  const game = useRef<FishingState>(createFishing(Math.floor(Math.random() * 1e6), view.settings.energy));
   const [, setFrame] = useState(0);
   const [banner, setBanner] = useState<{ text: string; gold: boolean; key: number } | null>(null);
   const [hint, setHint] = useState("Styr kroken med musen, fingret eller piltangenterna. Djupare fisk är värd mer!");
@@ -103,6 +103,10 @@ export default function FishGame({ view, act, clockOffset }: { view: PlayerView;
           } else setHint("Bara en gammal känga. Undvik botten där den ligger!");
         } else if (e.type === "bite") sfx("bite");
         else if (e.type === "snag") sfx("hit");
+        else if (e.type === "steal") {
+          sfx("leak");
+          setHint(`Gäddan snodde din ${FISH[e.kind].name.toLowerCase()}! Styr undan nästa gång.`);
+        }
         else if (e.type === "splash") sfx("splash");
         else if (e.type === "gold") {
           sfx("star");
