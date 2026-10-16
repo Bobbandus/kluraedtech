@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useState } from "react";
 import { StudentNav } from "@/components/nav";
 import { Avatar } from "@/components/avatar";
+import { MODE_INFO } from "@/lib/modes";
 import { Icon } from "@/components/icons";
 import { GnistaIcon } from "@/components/brand";
 import { SKINS, RARITY, skinById } from "@/data/skins";
@@ -96,6 +97,29 @@ export default function Profile() {
               </div>
             </div>
           ))}
+        </section>
+
+        <section className="card card-pad" style={{ marginTop: 14 }}>
+          <h2 style={{ fontSize: "1.2rem" }}>Personbästa</h2>
+          <p className="muted" style={{ fontSize: "0.9rem" }}>Ditt högsta resultat i varje spelläge.</p>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))", gap: 10, marginTop: 12 }}>
+            {(["jakt", "straff", "slalom", "fiske", "fjall"] as const).map((m) => {
+              const best = st.bests?.[m];
+              return (
+                <div key={m} className="row gap-12" style={{ padding: "10px 12px", borderRadius: 16, background: "var(--paper)" }}>
+                  <span style={{ display: "grid", placeItems: "center", width: 36, height: 36, borderRadius: 10, background: best ? "var(--sol-tint)" : "var(--card)", color: best ? "var(--sol-dark)" : "var(--ink-3)" }}>
+                    <Icon name={MODE_INFO[m].icon} size={18} />
+                  </span>
+                  <span className="grow" style={{ minWidth: 0 }}>
+                    <span style={{ display: "block", fontWeight: 750, fontSize: "0.92rem" }}>{MODE_INFO[m].name}</span>
+                    <span className="num" style={{ fontSize: "1.05rem", color: best ? "var(--ink)" : "var(--ink-3)" }}>
+                      {best ? `${best.toLocaleString("sv-SE")} p` : "Inte spelat"}
+                    </span>
+                  </span>
+                </div>
+              );
+            })}
+          </div>
         </section>
 
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: 14, marginTop: 14 }}>

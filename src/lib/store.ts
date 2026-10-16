@@ -45,6 +45,9 @@ export interface LastMatch {
   earned: { label: string; amount: number }[];
   xp: number;
   personalBest: boolean;
+  /** Slog eleven sitt rekord i läget, och vad var det gamla? */
+  newRecord?: boolean;
+  prevBest?: number;
   reachedSummit: boolean;
   energy: string;
   missed: { text: string; answer: string; yours: string | null; explanation?: string }[];
@@ -65,6 +68,8 @@ interface StudentState {
   summits: number;
   quests: Quest[];
   lastMatch: LastMatch | null;
+  /** Personbästa (poäng) per spelläge */
+  bests?: Record<string, number>;
   /** Framtid: koppling till konto/skola/klass */
   accountId: string | null;
   /** Har sett presentdialogen för early alpha-figuren */
@@ -178,6 +183,7 @@ export const useStore = create<Store>()(
             student: {
               ...st,
               lastMatch: m,
+              bests: m.mode && m.mode !== "topptur" ? { ...(st.bests ?? {}), [m.mode]: Math.max(st.bests?.[m.mode] ?? 0, m.score) } : st.bests,
               gnistor: st.gnistor + earned,
               xp: st.xp + m.xp,
               matches: st.matches + 1,

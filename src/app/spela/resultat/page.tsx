@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { MODE_INFO } from "@/lib/modes";
 import { useEffect, useState } from "react";
 import { StudentNav } from "@/components/nav";
 import { Avatar } from "@/components/avatar";
@@ -54,7 +55,7 @@ export default function StudentResult() {
             {m.quizTitle}
           </p>
           <h1 style={{ marginTop: 6 }}>
-            {m.mode === "straff" ? ((m.goals ?? 0) >= 5 ? "Vilken skytt!" : m.personalBest ? "Nytt personbästa!" : "Snyggt sparkat!") : m.mode === "slalom" ? (acc >= 75 ? "Felfritt åkt!" : m.personalBest ? "Nytt personbästa!" : "Snyggt åkt!") : m.mode === "fiske" ? ((m.best === "gadda" || m.best === "guld") ? "Vilken fångst!" : m.personalBest ? "Nytt personbästa!" : "Fint fiskat!") : m.mode === "jakt" ? ((m.stars ?? 0) >= 5 ? "Polisen hängde inte med!" : m.personalBest ? "Nytt personbästa!" : "Bra kört!") : m.mode === "fjall" ? (acc >= 75 ? "Stugan stod pall!" : m.personalBest ? "Nytt personbästa!" : "Bra försvarat!") : m.reachedSummit ? "Du nådde toppen!" : acc >= 70 ? "Starkt klättrat!" : m.personalBest ? "Nytt personbästa!" : "Bra kämpat!"}
+            {m.mode === "straff" ? ((m.goals ?? 0) >= 5 ? "Vilken skytt!" : m.personalBest ? "Nytt personbästa!" : "Snyggt sparkat!") : m.mode === "slalom" ? (acc >= 90 ? "Felfritt åkt!" : m.personalBest ? "Nytt personbästa!" : "Snyggt åkt!") : m.mode === "fiske" ? ((m.best === "gadda" || m.best === "guld") ? "Vilken fångst!" : m.personalBest ? "Nytt personbästa!" : "Fint fiskat!") : m.mode === "jakt" ? ((m.stars ?? 0) >= 5 ? "Polisen hängde inte med!" : m.personalBest ? "Nytt personbästa!" : "Bra kört!") : m.mode === "fjall" ? (acc >= 75 ? "Stugan stod pall!" : m.personalBest ? "Nytt personbästa!" : "Bra försvarat!") : m.reachedSummit ? "Du nådde toppen!" : acc >= 70 ? "Starkt klättrat!" : m.personalBest ? "Nytt personbästa!" : "Bra kämpat!"}
           </h1>
           <p className="muted" style={{ marginTop: 6 }}>
             {m.mode === "straff"
@@ -72,6 +73,13 @@ export default function StudentResult() {
                 : `Du klättrade ${m.score.toLocaleString("sv-SE")} m`}
           </p>
 
+          {m.newRecord && m.mode && (
+            <p style={{ marginTop: 12 }}>
+              <span className="chip" style={{ background: "var(--sol)", color: "var(--ink)", fontWeight: 800 }}>
+                <Icon name="trophy" size={15} /> Nytt rekord i {MODE_INFO[m.mode].name}! Förra: {(m.prevBest ?? 0).toLocaleString("sv-SE")}
+              </span>
+            </p>
+          )}
           <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 10, marginTop: 22 }}>
             {[
               { v: m.mode === "fjall" || m.mode === "jakt" || m.mode === "fiske" || m.mode === "slalom" || m.mode === "straff" ? String(m.correct) : `${m.correct}/${m.questions}`, l: "rätt svar" },

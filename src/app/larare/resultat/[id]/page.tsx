@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { MODE_INFO } from "@/lib/modes";
 import { useParams, useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 import { Avatar } from "@/components/avatar";
@@ -82,7 +83,7 @@ export default function ResultDetail() {
       <div className="row between wrap gap-16">
         <div>
           <p className="eyebrow">
-            {r.className} · {formatDate(r.date, true)} · {ENERGY[r.energy].label}
+            {r.className} · {formatDate(r.date, true)}{r.mode ? ` · ${MODE_INFO[r.mode].name}` : ""} · {ENERGY[r.energy].label}
           </p>
           <h1 style={{ marginTop: 4 }}>{r.quizTitle}</h1>
         </div>

@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { MODE_INFO } from "@/lib/modes";
 import { CoverArt } from "@/components/cover";
 import { Icon } from "@/components/icons";
 import { AccuracyRing } from "@/components/teacher-ui";
@@ -35,6 +36,11 @@ export default function Results() {
                     <Icon name="users" size={14} /> {r.className} · {r.players.length} elever
                   </span>
                   <span>{formatDate(r.date, true)}</span>
+                  {r.mode && (
+                    <span>
+                      <Icon name={MODE_INFO[r.mode].icon} size={14} /> {MODE_INFO[r.mode].name}
+                    </span>
+                  )}
                   <span>{ENERGY[r.energy].label}</span>
                 </div>
                 {weak.length > 0 && (

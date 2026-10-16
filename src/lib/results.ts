@@ -112,7 +112,7 @@ function simulateHistory(id: string, quizId: string, classId: string, date: stri
     difficulty: (HARD[`${quizId}:${i}`] ?? (i % 4 === 0 ? -0.08 : 0)) - ease,
   }));
   const sim = simulateMatch(seed, mates, metas, energy);
-  return buildResult(id, quiz, cls.name, date, energy, sim.players, sim.distribution, sim.unanswered);
+  return { ...buildResult(id, quiz, cls.name, date, energy, sim.players, sim.distribution, sim.unanswered), mode: "topptur" };
 }
 
 let cache: SessionResult[] | null = null;

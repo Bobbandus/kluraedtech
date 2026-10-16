@@ -675,6 +675,8 @@ function Finish({ view }: { view: PlayerView }) {
       earned,
       xp: f.correct * 10 + 30,
       personalBest,
+      prevBest: st.bests?.[view.mode],
+      newRecord: view.mode !== "topptur" && f.score > 0 && f.score > (st.bests?.[view.mode] ?? 0) && st.bests?.[view.mode] !== undefined,
       reachedSummit: view.mode === "topptur" ? f.score >= summitHeight(view.total) : false,
       energy: view.settings.energy,
       missed: f.missed,
