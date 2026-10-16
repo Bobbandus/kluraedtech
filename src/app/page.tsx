@@ -5,10 +5,10 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Wordmark, GnistaIcon } from "@/components/brand";
 import { Icon } from "@/components/icons";
-import { MountainScene } from "@/components/scene";
 import { useStore } from "@/lib/store";
 import DefensePreview from "@/components/game/defense/DefensePreview";
 import FishPreview from "@/components/game/fishing/FishPreview";
+import HeroShowcase from "@/components/home/HeroShowcase";
 import SlalomPreview from "@/components/game/slalom/SlalomPreview";
 import PenaltyPreview from "@/components/game/penalty/PenaltyPreview";
 import ClimbScene from "@/components/game/climb/ClimbScene";
@@ -110,27 +110,7 @@ export default function Home() {
           </div>
 
           <div className={s.art}>
-            <MountainScene
-              climbers={[
-                { id: "a", skin: "kassetten", t: 0.08 },
-                { id: "b", skin: "flugis", t: 0.27 },
-                { id: "c", skin: "mosse", t: 0.46, highlight: true },
-                { id: "d", skin: "raven", t: 0.66 },
-                { id: "e", skin: "isbiten", t: 0.84 },
-              ]}
-            />
-            <div className={s.artCard} style={{ left: -14, top: "18%" }}>
-              <span style={{ color: "var(--ok)" }}>
-                <Icon name="check" size={18} stroke={3} />
-              </span>
-              Rätt! +118 m
-            </div>
-            <div className={s.artCard} style={{ right: -10, bottom: "16%", animationDelay: "-2s" }}>
-              <span style={{ color: "var(--sol-dark)" }}>
-                <Icon name="sun" size={18} />
-              </span>
-              5 rätt i rad
-            </div>
+            <HeroShowcase />
           </div>
         </section>
 
