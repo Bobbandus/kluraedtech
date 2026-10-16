@@ -39,6 +39,11 @@ export default function PenaltyGame({ view, act, clockOffset }: { view: PlayerVi
   const [streak, setStreak] = useState(0);
   const [banner, setBanner] = useState<{ text: string; good: boolean; points: number; key: number } | null>(null);
   const [soundOn, toggleSound] = useSound();
+  const [intro, setIntro] = useState(true);
+  useEffect(() => {
+    const t = setTimeout(() => setIntro(false), 7000);
+    return () => clearTimeout(t);
+  }, []);
   const ended = view.phase === "ended";
   const st = useRef({ phase, reduced, u: 0, aimT0: 0, flight: null as Flight | null, cheer: 0, lastCorrect: false, sides: [] as number[] });
   st.current.phase = phase;
@@ -177,6 +182,13 @@ export default function PenaltyGame({ view, act, clockOffset }: { view: PlayerVi
           <Icon name={soundOn ? "volume" : "mute"} size={18} />
         </button>
       </div>
+
+      {intro && phase === "question" && shots === 0 && (
+        <div className={s.intro} role="status">
+          <strong>Svara rätt – då får du skjuta en straff!</strong>
+          <span>Rätt i rad höjer multiplikatorn. Krysset ger mest poäng.</span>
+        </div>
+      )}
 
       {(phase === "aimU" || phase === "aimV") && (
         <div className={s.prompt}>
